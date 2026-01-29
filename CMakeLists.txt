@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(PFUNIT_DIR "/home/astokely/software/pFUnit/build/installed/PFUNIT-4.10/cmake")
 find_package(PFUNIT REQUIRED)
-find_package(Boost REQUIRED COMPONENTS math)
 
 
 
