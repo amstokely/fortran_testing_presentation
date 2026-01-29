@@ -1,0 +1,102 @@
+module test_ksg_count
+   use iso_fortran_env, only: real64
+   use funit
+   use mutual_information
+   use ksg_cpp
+   use test_utils
+   implicit none
+
+   @TestCase
+   type, extends(TestCase) :: ksg_count_fixture
+      real(real64) :: Mx(8)
+      real(real64) :: My(8)
+      real(real64) :: J(8, 2)
+      real(real64) :: jref(2)
+   contains
+      procedure :: setup
+      procedure :: test_max_norm_from_point
+      procedure :: test_k_argsort
+      procedure :: test_max_neighbor_distance
+      procedure :: test_count_neighbors_within_radius
+      procedure :: test_complete_ksg_count
+   end type ksg_count_fixture
+contains
+
+   subroutine setup(this)
+      class(ksg_count_fixture), intent(inout) :: this
+      this%Mx = [1.0_real64, 4.0_real64, &
+            6.0_real64, 3.0_real64, &
+            5.0_real64, 2.0_real64, &
+            7.0_real64, 8.0_real64]
+      this%My = [5.0_real64, 6.0_real64, &
+            4.0_real64, 8.0_real64, &
+            1.0_real64, 7.0_real64, &
+            2.0_real64, 3.0_real64]
+      this%J(:, 1) = this%Mx
+      this%J(:, 2) = this%My
+      this%jref = [1.0_real64, 5.0_real64]
+   end subroutine setup
+
+
+   @Test
+   subroutine test_max_norm_from_point(this)
+      class(ksg_count_fixture), intent(inout) :: this
+      real(real64), parameter :: expected_dists(8) = [0.0_real64, 3.0_real64, &
+            5.0_real64, 3.0_real64, &
+            4.0_real64, 2.0_real64, &
+            6.0_real64, 7.0_real64]
+      real(real64) :: dists(8)
+
+      call max_norm_from_point(this%J, this%jref, dists)
+      @assertEqual(expected_dists, dists, tolerance = 1.0e-12_real64)
+   end subroutine
+
+
+   @Test
+   subroutine test_k_argsort(this)
+      class(ksg_count_fixture), intent(inout) :: this
+      real(real64), parameter :: X(8) = [0.0_real64, 3.0_real64, &
+            5.0_real64, 3.0_real64, &
+            4.0_real64, 2.0_real64, &
+            6.0_real64, 7.0_real64]
+      integer, parameter :: expected_idxs(4) = [1, 6, 2, 4]
+      integer :: idxs(4)
+
+      call k_argsort(X, 4, idxs)
+      @assertEqual(expected_idxs, idxs)
+   end subroutine
+
+
+   @Test
+   subroutine test_max_neighbor_distance(this)
+      class(ksg_count_fixture), intent(inout) :: this
+      integer, parameter :: neighbors(3) = [6, 2, 4]
+      real(real64) :: max_dist
+
+      call max_neighbor_distance(this%My, 5.0_real64, neighbors, max_dist)
+      @assertEqual(3.0_real64, max_dist, tolerance = 1.0e-12_real64)
+   end subroutine
+
+
+   @Test
+   subroutine test_count_neighbors_within_radius(this)
+      class(ksg_count_fixture), intent(inout) :: this
+      integer :: count
+
+      call count_neighbors_within_radius(this%My, 5.0_real64, 3.0_real64, count)
+      @assertEqual(6, count)
+   end subroutine
+
+
+   @Test
+   subroutine test_complete_ksg_count(this)
+      class(ksg_count_fixture), intent(inout) :: this
+      integer :: count(2), count_cpp(2)
+
+      call ksg_count(this%J, 1, 3, count)
+      call ksg_count_cpp(this%J, 1, 3, count_cpp)
+      @assertEqual([3, 6], count)
+      @assertEqual([3, 6], count_cpp)
+   end subroutine
+
+end module test_ksg_count

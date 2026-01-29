@@ -1,0 +1,155 @@
+module test_mutual_information
+   use iso_fortran_env, only: real64
+   use funit
+   use mutual_information
+   use test_utils
+   implicit none
+
+   @TestCase
+   type, extends(TestCase) :: mi_fixture
+      integer :: n_points = 1024
+      real(real64), allocatable :: Mx(:)
+      real(real64), allocatable :: My(:)
+      real(real64), allocatable :: J(:,:)
+   contains
+      procedure :: setup
+      procedure :: teardown
+      procedure :: test_mutual_information_independent
+      procedure :: test_mutual_information_analytic_gaussian
+      procedure :: test_analytic_gaussian_ratio
+      procedure :: test_generalized_correlation_independent
+      procedure :: test_generalized_correlation_non_negative
+      procedure :: test_generalized_correlation_non_linear
+   end type mi_fixture
+
+contains
+
+   subroutine setup(this)
+      class(mi_fixture), intent(inout) :: this
+      allocate(this%Mx(this%n_points))
+      allocate(this%My(this%n_points))
+      allocate(this%J(this%n_points,2))
+   end subroutine setup
+
+   subroutine teardown(this)
+      class(mi_fixture), intent(inout) :: this
+      deallocate(this%Mx)
+      deallocate(this%My)
+      deallocate(this%J)
+   end subroutine teardown
+
+
+   @Test
+   subroutine test_mutual_information_independent(this)
+      class(mi_fixture), intent(inout) :: this
+      real(real64) :: mi, mi_cpp
+
+      call generate_independent_arrays(this%Mx, this%My, this%n_points)
+
+      this%J(:,1) = this%Mx
+      this%J(:,2) = this%My
+
+      call calc_mutual_information(this%J, this%n_points/2, mi)
+      call calc_mutual_information(this%J, this%n_points/2, mi_cpp)
+      @assertEqual(0.0_real64, mi, tolerance=0.01_real64)
+      @assertEqual(0.0_real64, mi_cpp, tolerance=0.01_real64)
+   end subroutine test_mutual_information_independent
+
+
+   @Test
+   subroutine test_mutual_information_analytic_gaussian(this)
+      class(mi_fixture), intent(inout) :: this
+      integer, parameter :: n_big = 4000
+      real(real64) :: Mx(n_big), My(n_big), J(n_big,2)
+      real(real64) :: mi, mi_cpp
+
+      call correlated_gaussian_arrays(Mx, My, n_big, 0.9_real64)
+
+      J(:,1) = Mx
+      J(:,2) = My
+
+      call calc_mutual_information(J, int(n_big*0.04_real64+0.5_real64), mi)
+      call calc_mutual_information(J, int(n_big*0.04_real64+0.5_real64), mi_cpp)
+      @assertEqual(0.830366_real64, mi, tolerance=0.05_real64)
+      @assertEqual(0.830366_real64, mi_cpp, tolerance=0.05_real64)
+   end subroutine test_mutual_information_analytic_gaussian
+
+   @Test
+   subroutine test_analytic_gaussian_ratio(this)
+      class(mi_fixture), intent(inout) :: this
+      real(real64) :: mi_02, mi_04, mi_06
+      real(real64) :: mi_cpp_02, mi_cpp_04, mi_cpp_06
+      integer :: k_02, k_04, k_06
+
+      call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, 0.9_real64)
+
+      this%J(:,1) = this%Mx
+      this%J(:,2) = this%My
+
+      k_02 = int(this%n_points*0.02_real64+0.5_real64)
+      k_04 = int(this%n_points*0.04_real64+0.5_real64)
+      k_06 = int(this%n_points*0.06_real64+0.5_real64)
+
+      call calc_mutual_information(this%J, k_02, mi_02)
+      call calc_mutual_information(this%J, k_04, mi_04)
+      call calc_mutual_information(this%J, k_06, mi_06)
+      call calc_mutual_information(this%J, k_02, mi_cpp_02)
+      call calc_mutual_information(this%J, k_04, mi_cpp_04)
+      call calc_mutual_information(this%J, k_06, mi_cpp_06)
+
+      @assertEqual(.true., mi_02 > mi_04)
+      @assertEqual(.true., mi_04 > mi_06)
+      @assertEqual(.true., mi_cpp_02 > mi_cpp_04)
+      @assertEqual(.true., mi_cpp_04 > mi_cpp_06)
+   end subroutine test_analytic_gaussian_ratio
+
+
+   @Test
+   subroutine test_generalized_correlation_independent(this)
+      class(mi_fixture), intent(inout) :: this
+      real(real64) :: gc
+
+      call generate_independent_arrays(this%Mx, this%My, this%n_points)
+
+      this%J(:,1) = this%Mx
+      this%J(:,2) = this%My
+
+      call calc_generalized_correlation(this%J, this%n_points/2, gc)
+      @assertEqual(0.0_real64, gc, tolerance=0.15_real64)
+   end subroutine test_generalized_correlation_independent
+
+
+   @Test
+   subroutine test_generalized_correlation_non_negative(this)
+      class(mi_fixture), intent(inout) :: this
+      real(real64) :: gc, pearson_r
+
+      call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, -1.0_real64)
+
+      this%J(:,1) = this%Mx
+      this%J(:,2) = this%My
+
+      call calc_generalized_correlation(this%J, 4, gc)
+      pearson_r = pearson_corr(this%Mx, this%My, this%n_points)
+
+      @assertEqual(0.0_real64, gc + pearson_r, tolerance=0.1_real64)
+   end subroutine test_generalized_correlation_non_negative
+
+
+   @Test
+   subroutine test_generalized_correlation_non_linear(this)
+      class(mi_fixture), intent(inout) :: this
+      real(real64) :: gc, pearson_r
+
+      call sin_cos_arrays(this%Mx, this%My, this%n_points)
+
+      this%J(:,1) = this%Mx
+      this%J(:,2) = this%My
+
+      call calc_generalized_correlation(this%J, 4, gc)
+      pearson_r = pearson_corr(this%Mx, this%My, this%n_points)
+
+      @assertEqual(1.0_real64, gc - pearson_r, tolerance=0.1_real64)
+   end subroutine test_generalized_correlation_non_linear
+
+end module test_mutual_information
