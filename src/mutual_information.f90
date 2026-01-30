@@ -1,15 +1,15 @@
 module mutual_information
    use iso_fortran_env, only: real64
-   use ksg_cpp
+   use c_mutual_information
    implicit none
    abstract interface
-      subroutine i_ksg_count_proc(J, ref_idx, k, counts)
+      subroutine ksg_count_i(J, ref_idx, k, counts)
          import :: real64
          real(real64), intent(in) :: J(:, :)
          integer, intent(in)      :: ref_idx
          integer, intent(in)      :: k
          integer, intent(out)     :: counts(:)
-      end subroutine i_ksg_count_proc
+      end subroutine ksg_count_i
    end interface
 contains
 
@@ -36,32 +36,46 @@ contains
 
 
    subroutine k_argsort(X, k, idxs)
-      real(real64), intent(in) :: X(:)
-      integer, intent(in)      :: k
-      integer, intent(out)     :: idxs(:)
+      use iso_fortran_env, only: real64
+      implicit none
 
-      real(real64), allocatable :: X_copy(:)
-      integer :: i, j, n, min_idx
-      real(real64) :: min_val
+      real(real64), intent(in)  :: X(:)
+      integer,      intent(in)  :: k
+      integer,      intent(out) :: idxs(k)
+
+      real(real64) :: best_vals(k)
+      integer      :: best_idxs(k)
+
+      integer :: i, j, n, pos
+      real(real64) :: xval
 
       n = size(X)
-      allocate(X_copy(n))
-      X_copy = X
 
-      do i = 1, k
-         min_val = huge(0.0_real64)
-         do j = 1, n
-            if (X_copy(j) < min_val) then
-               min_val = X_copy(j)
-               min_idx = j
-            end if
-         end do
-         idxs(i) = min_idx
-         X_copy(min_idx) = huge(0.0_real64)
+      ! Initialize with +inf
+      best_vals = huge(0.0_real64)
+      best_idxs = -1
+
+      do i = 1, n
+         xval = X(i)
+
+         ! Only consider if better than current worst
+         if (xval < best_vals(k)) then
+
+            ! Find insertion position (small k → linear is fastest)
+            pos = k
+            do while (pos > 1 .and. xval < best_vals(pos-1))
+               best_vals(pos) = best_vals(pos-1)
+               best_idxs(pos) = best_idxs(pos-1)
+               pos = pos - 1
+            end do
+
+            best_vals(pos) = xval
+            best_idxs(pos) = i
+         end if
       end do
 
-      deallocate(X_copy)
-   end subroutine k_argsort
+      idxs = best_idxs
+   end subroutine
 
 
    subroutine max_neighbor_distance(X, xref, idxs, max_dist)
@@ -129,23 +143,23 @@ contains
    end subroutine ksg_count
 
 
-   subroutine calc_mutual_information(J, k, mi, ksg_count_proc)
+   subroutine calc_mutual_information(J, k, mi, ksg_count_proc_arg)
       real(real64), intent(in)  :: J(:, :)
       integer, intent(in)       :: k
       real(real64), intent(out) :: mi
-      procedure(i_ksg_count_proc), optional :: ksg_count_proc
+      procedure(ksg_count_i), optional :: ksg_count_proc_arg
 
       integer :: n_points, i
       integer :: counts(2)
       real(real64), allocatable :: psi(:)
       real(real64), parameter :: gamma = -0.5772156649015328606_real64
       real(real64) :: inversePsiIndex, avg_psi_ksg_sum
-      procedure(i_ksg_count_proc), pointer :: ksg_count_ptr
+      procedure(ksg_count_i), pointer :: ksg_count_proc
 
-      if (present(ksg_count_proc)) then
-         ksg_count_ptr => ksg_count_proc
+      if (present(ksg_count_proc_arg)) then
+         ksg_count_proc => ksg_count_proc_arg
       else
-         ksg_count_ptr => ksg_count
+         ksg_count_proc => ksg_count
       end if
 
       n_points = size(J, 1)
@@ -159,7 +173,7 @@ contains
 
       avg_psi_ksg_sum = 0.0_real64
       do i = 1, n_points
-         call ksg_count_ptr(J, i, k, counts)
+         call ksg_count_proc(J, i, k, counts)
          avg_psi_ksg_sum = avg_psi_ksg_sum + &
                (psi(counts(1) + 1) + psi(counts(2) + 1))
       end do
@@ -171,16 +185,24 @@ contains
       deallocate(psi)
    end subroutine calc_mutual_information
 
-   subroutine calc_generalized_correlation(J, k, gc)
+   subroutine calc_generalized_correlation(J, k, gc, ksg_count_proc_arg)
       real(real64), intent(in)  :: J(:, :)
       integer, intent(in)       :: k
       real(real64), intent(out) :: gc
+      procedure(ksg_count_i), optional :: ksg_count_proc_arg
 
       real(real64) :: mi
       integer :: n_points
+      procedure(ksg_count_i), pointer :: ksg_count_proc
+
+      if (present(ksg_count_proc_arg)) then
+         ksg_count_proc => ksg_count_proc_arg
+      else
+         ksg_count_proc => ksg_count
+      end if
 
       n_points = size(J, 1)
-      call calc_mutual_information(J, k, mi)
+      call calc_mutual_information(J, k, mi, ksg_count_proc)
       if (mi <= 0.0_real64) then
          gc = 0.0_real64
          return

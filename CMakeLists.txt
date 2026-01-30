@@ -4,11 +4,10 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(PFUNIT_DIR "/home/astokely/software/pFUnit/build/installed/PFUNIT-4.10/cmake")
+set(PFUNIT_DIR "/Users/astokely/software/pFUnit/build/installed/PFUNIT-4.10/cmake")
 find_package(PFUNIT REQUIRED)
 
-
-
+include_directories(external)
 add_subdirectory(src)
 add_subdirectory(test)
 

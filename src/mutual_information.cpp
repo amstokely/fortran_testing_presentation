@@ -1,12 +1,9 @@
-#include "boost_math.hpp"
+#include "mutual_information.hpp"
 
 // J is row-major: n_points × n_dims
   // counts must be size 2
-  void ksg_count_c(const double* J,
-                   int n_points,
-                   int n_dims,
-                   int ref_idx,   // 0-based!
-                   int k,
+  void c_ksg_count(const double* J, const int n_points, const int n_dims, const int ref_idx,   // 0-based!
+                   const int k,
                    int* counts)
   {
       // Wrap raw memory in a vector view (no copy)

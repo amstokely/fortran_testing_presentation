@@ -2,7 +2,7 @@ module test_ksg_count
    use iso_fortran_env, only: real64
    use funit
    use mutual_information
-   use ksg_cpp
+   use cpp_mutual_information
    use test_utils
    implicit none
 
@@ -94,7 +94,7 @@ contains
       integer :: count(2), count_cpp(2)
 
       call ksg_count(this%J, 1, 3, count)
-      call ksg_count_cpp(this%J, 1, 3, count_cpp)
+      call cpp_ksg_count(this%J, 1, 3, count_cpp)
       @assertEqual([3, 6], count)
       @assertEqual([3, 6], count_cpp)
    end subroutine
