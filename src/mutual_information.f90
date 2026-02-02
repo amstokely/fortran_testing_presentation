@@ -1,6 +1,6 @@
 module mutual_information
    use iso_fortran_env, only: real64
-   use c_mutual_information
+   use cpp_mutual_information
    implicit none
 
    abstract interface

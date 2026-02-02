@@ -74,10 +74,8 @@ contains
             size(Mx), &
             k, &
             c_nx, c_ny)
-      do ref_idx = 1, size(Mx)
-         nx(ref_idx) = c_nx(ref_idx)
-         ny(ref_idx) = c_ny(ref_idx)
-      end do
+      nx = c_nx
+      ny = c_ny
    end subroutine
 
 end module

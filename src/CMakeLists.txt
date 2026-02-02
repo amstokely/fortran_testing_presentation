@@ -9,6 +9,7 @@ target_include_directories(mutual_information_cpp INTERFACE
 add_library(mutual_information STATIC
         mutual_information.f90
         cpp_mutual_information.f90
+        cuda_mutual_information.f90
 )
 target_link_libraries(mutual_information PRIVATE mutual_information_cpp)
 target_include_directories(mutual_information INTERFACE
