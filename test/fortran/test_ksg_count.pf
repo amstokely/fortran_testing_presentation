@@ -10,8 +10,6 @@ module test_ksg_count
    type, extends(TestCase) :: ksg_count_fixture
       real(real64) :: Mx(8)
       real(real64) :: My(8)
-      real(real64) :: J(8, 2)
-      real(real64) :: jref(2)
    contains
       procedure :: setup
       procedure :: test_max_norm_from_point
@@ -20,45 +18,51 @@ module test_ksg_count
       procedure :: test_count_neighbors_within_radius
       procedure :: test_complete_ksg_count
    end type ksg_count_fixture
+
 contains
 
    subroutine setup(this)
       class(ksg_count_fixture), intent(inout) :: this
+
       this%Mx = [1.0_real64, 4.0_real64, &
             6.0_real64, 3.0_real64, &
             5.0_real64, 2.0_real64, &
             7.0_real64, 8.0_real64]
+
       this%My = [5.0_real64, 6.0_real64, &
             4.0_real64, 8.0_real64, &
             1.0_real64, 7.0_real64, &
             2.0_real64, 3.0_real64]
-      this%J(:, 1) = this%Mx
-      this%J(:, 2) = this%My
-      this%jref = [1.0_real64, 5.0_real64]
    end subroutine setup
 
+   ! --------------------------------------------------------------------------
 
    @Test
    subroutine test_max_norm_from_point(this)
       class(ksg_count_fixture), intent(inout) :: this
-      real(real64), parameter :: expected_dists(8) = [0.0_real64, 3.0_real64, &
-            5.0_real64, 3.0_real64, &
-            4.0_real64, 2.0_real64, &
-            6.0_real64, 7.0_real64]
+
+      real(real64), parameter :: expected_dists(8) = &
+            [0.0_real64, 3.0_real64, 5.0_real64, 3.0_real64, &
+                  4.0_real64, 2.0_real64, 6.0_real64, 7.0_real64]
+
       real(real64) :: dists(8)
 
-      call max_norm_from_point(this%J, this%jref, dists)
-      @assertEqual(expected_dists, dists, tolerance = 1.0e-12_real64)
+      call max_norm_from_point(this%Mx, this%My, &
+            this%Mx(1), this%My(1), dists)
+
+      @assertEqual(expected_dists, dists, tolerance=1.0e-12_real64)
    end subroutine
 
+   ! --------------------------------------------------------------------------
 
    @Test
    subroutine test_k_argsort(this)
       class(ksg_count_fixture), intent(inout) :: this
-      real(real64), parameter :: X(8) = [0.0_real64, 3.0_real64, &
-            5.0_real64, 3.0_real64, &
-            4.0_real64, 2.0_real64, &
-            6.0_real64, 7.0_real64]
+
+      real(real64), parameter :: X(8) = &
+            [0.0_real64, 3.0_real64, 5.0_real64, 3.0_real64, &
+                  4.0_real64, 2.0_real64, 6.0_real64, 7.0_real64]
+
       integer, parameter :: expected_idxs(4) = [1, 6, 2, 4]
       integer :: idxs(4)
 
@@ -66,17 +70,21 @@ contains
       @assertEqual(expected_idxs, idxs)
    end subroutine
 
+   ! --------------------------------------------------------------------------
 
    @Test
    subroutine test_max_neighbor_distance(this)
       class(ksg_count_fixture), intent(inout) :: this
+
       integer, parameter :: neighbors(3) = [6, 2, 4]
       real(real64) :: max_dist
 
       call max_neighbor_distance(this%My, 5.0_real64, neighbors, max_dist)
-      @assertEqual(3.0_real64, max_dist, tolerance = 1.0e-12_real64)
+
+      @assertEqual(3.0_real64, max_dist, tolerance=1.0e-12_real64)
    end subroutine
 
+   ! --------------------------------------------------------------------------
 
    @Test
    subroutine test_count_neighbors_within_radius(this)
@@ -84,19 +92,38 @@ contains
       integer :: count
 
       call count_neighbors_within_radius(this%My, 5.0_real64, 3.0_real64, count)
+
       @assertEqual(6, count)
    end subroutine
 
+   ! --------------------------------------------------------------------------
 
    @Test
    subroutine test_complete_ksg_count(this)
       class(ksg_count_fixture), intent(inout) :: this
-      integer :: count(2), count_cpp(2)
 
-      call ksg_count(this%J, 1, 3, count)
-      call cpp_ksg_count(this%J, 1, 3, count_cpp)
-      @assertEqual([3, 6], count)
-      @assertEqual([3, 6], count_cpp)
+      integer :: nf90_nx, nf90_ny
+      integer :: cpp_nx, cpp_ny
+
+      call nf90_ksg_count(this%Mx, this%My, 1, 3, nf90_nx, nf90_ny)
+      call cpp_ksg_count(this%Mx, this%My, 1, 3, cpp_nx, cpp_ny)
+
+      @assertEqual([3, 6], [nf90_nx, nf90_ny])
+      @assertEqual([3, 6], [cpp_nx, cpp_ny])
+   end subroutine
+
+   @Test
+   subroutine test_complete_ksg_counts(this)
+      class(ksg_count_fixture), intent(inout) :: this
+
+      integer :: nf90_nx(8), nf90_ny(8)
+      integer :: cpp_nx(8), cpp_ny(8)
+
+      call nf90_ksg_counts(this%Mx, this%My, 3, nf90_nx, nf90_ny)
+      call cpp_ksg_counts(this%Mx, this%My, 3, cpp_nx, cpp_ny)
+
+      @assertEqual([3, 6], [nf90_nx(1), nf90_ny(1)])
+      @assertEqual([3, 6], [cpp_nx(1), cpp_ny(1)])
    end subroutine
 
 end module test_ksg_count
