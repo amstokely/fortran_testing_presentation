@@ -56,68 +56,65 @@ end subroutine
 ---
 
 ```fortran
-  @Test
-   subroutine test_k_argsort(this)
-      class(ksg_count_fixture), intent(inout) :: this
+@Test
+subroutine test_k_argsort(this)
+    class(ksg_count_fixture), intent(inout) :: this
+    real(real64), parameter :: X(8) = [&
+          0.0_real64, 3.0_real64, &
+          5.0_real64, 3.0_real64, &
+          4.0_real64, 2.0_real64, &
+          6.0_real64, 7.0_real64]
+    integer, parameter :: expected_idxs(4) = [1, 6, 2, 4]
+    integer :: idxs(4)
 
-      real(real64), parameter :: X(8) = &
-            [0.0_real64, 3.0_real64, 5.0_real64, 3.0_real64, &
-                  4.0_real64, 2.0_real64, 6.0_real64, 7.0_real64]
-
-      integer, parameter :: expected_idxs(4) = [1, 6, 2, 4]
-      integer :: idxs(4)
-
-      call k_argsort(X, 4, idxs)
-      @assertEqual(expected_idxs, idxs)
-   end subroutine
+    call k_argsort(X, 4, idxs)
+    @assertEqual(expected_idxs, idxs)
+end subroutine
 ```
 
 ---
 
 ```fortran
-  @Test
-   subroutine test_max_neighbor_distance(this)
-      class(ksg_count_fixture), intent(inout) :: this
+@Test
+subroutine test_max_neighbor_distance(this)
+    class(ksg_count_fixture), intent(inout) :: this
+    integer, parameter :: neighbors(3) = [6, 2, 4]
+    real(real64) :: max_dist
 
-      integer, parameter :: neighbors(3) = [6, 2, 4]
-      real(real64) :: max_dist
-
-      call max_neighbor_distance(this%My, 5.0_real64, neighbors, max_dist)
-
-      @assertEqual(3.0_real64, max_dist, tolerance=1.0e-12_real64)
-   end subroutine
+    call max_neighbor_distance(this%My, 5.0_real64, neighbors, max_dist)
+    @assertEqual(3.0_real64, max_dist, tolerance=1.0e-12_real64)
+end subroutine
 ```
 
 ---
 
 ```fortran 
-  @Test
-   subroutine test_count_neighbors_within_radius(this)
-      class(ksg_count_fixture), intent(inout) :: this
-      integer :: count
+@Test
+subroutine test_count_neighbors_within_radius(this)
+    class(ksg_count_fixture), intent(inout) :: this
+    integer :: count
 
-      call count_neighbors_within_radius(this%My, 5.0_real64, 3.0_real64, count)
-
-      @assertEqual(6, count)
-   end subroutine
+    call count_neighbors_within_radius(this%My, 5.0_real64, 3.0_real64, count)
+    @assertEqual(6, count)
+end subroutine
 ```
 
 ---
 
 ```fortran
- @Test
-   subroutine test_complete_ksg_count(this)
-      class(ksg_count_fixture), intent(inout) :: this
+@Test
+subroutine test_complete_ksg_count(this)
+    class(ksg_count_fixture), intent(inout) :: this
 
-      integer :: nf90_nx, nf90_ny
-      integer :: cpp_nx, cpp_ny
+    integer :: nf90_nx, nf90_ny
+    integer :: cpp_nx, cpp_ny
 
-      call nf90_ksg_count(this%Mx, this%My, 1, 3, nf90_nx, nf90_ny)
-      call cpp_ksg_count(this%Mx, this%My, 1, 3, cpp_nx, cpp_ny)
+    call nf90_ksg_count(this%Mx, this%My, 1, 3, nf90_nx, nf90_ny)
+    call cpp_ksg_count(this%Mx, this%My, 1, 3, cpp_nx, cpp_ny)
 
-      @assertEqual([3, 6], [nf90_nx, nf90_ny])
-      @assertEqual([3, 6], [cpp_nx, cpp_ny])
-   end subroutine
+    @assertEqual([3, 6], [nf90_nx, nf90_ny])
+    @assertEqual([3, 6], [cpp_nx, cpp_ny])
+end subroutine
 ```
 
 ---
