@@ -69,6 +69,22 @@ int main() {
                     expect(count[1] == 6u);
                 };
             };
+            when("running the complete ksg_count cuda algorithm") = [&] {
+                auto nx = new int[8];
+                auto ny = new int[8];
+                ksg::cuda_ksg_counts(Mx.data(), My.data(),
+                                     static_cast<int>(Mx.size()),
+                                     /*k*/ 3,
+                                        nx, ny);
+
+                then("the (nx, ny) counts match the Fortran implementation") = [
+                    &] {
+                    expect(nx[0] == 3u);
+                    expect(ny[0] == 6u);
+                };
+                delete [] nx;
+                delete [] ny;
+            };
         };
     };
 }
