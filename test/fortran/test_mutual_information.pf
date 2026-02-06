@@ -7,85 +7,125 @@ module test_mutual_information
    use test_utils
    implicit none
 
-   @TestCase
-   type, extends(TestCase) :: mi_fixture
+   ! ---------------------------------------------------------------------------
+   ! Backend test parameter
+   ! ---------------------------------------------------------------------------
+
+   @testParameter
+   type, extends(AbstractTestParameter) :: BackendParam
+      character(len=:), allocatable :: name
+      procedure(ksg_counts_i), pointer, nopass :: backend
+   contains
+      procedure :: toString
+   end type BackendParam
+
+   ! ---------------------------------------------------------------------------
+   ! Parameterized test case
+   ! ---------------------------------------------------------------------------
+
+   @testCase(constructor=make_case, testParameters={getBackendParams()})
+   type, extends(ParameterizedTestCase) :: mi_case
+      type(BackendParam) :: param
       integer :: n_points = 1024
-      real(real64), allocatable :: Mx(:)
-      real(real64), allocatable :: My(:)
+      real(real64), allocatable :: Mx(:), My(:)
    contains
       procedure :: setup
       procedure :: teardown
-      procedure :: test_mutual_information_independent
-      procedure :: test_mutual_information_analytic_gaussian
-      procedure :: test_analytic_gaussian_ratio
-      procedure :: test_generalized_correlation_independent
-      procedure :: test_generalized_correlation_non_negative
-      procedure :: test_generalized_correlation_non_linear
-   end type mi_fixture
+   end type mi_case
+
+   interface mi_case
+      module procedure make_case
+   end interface
 
 contains
 
+   ! ---------------------------------------------------------------------------
+   ! Constructor
+   ! ---------------------------------------------------------------------------
+
+   function make_case(param) result(this)
+      class(BackendParam), intent(in) :: param
+      type(mi_case) :: this
+      this%param = param
+   end function make_case
+
+   ! ---------------------------------------------------------------------------
+   ! Backend list
+   ! ---------------------------------------------------------------------------
+
+   function getBackendParams() result(params)
+      type(BackendParam), allocatable :: params(:)
+
+      allocate(params(3))
+
+      params(1)%name    = "Fortran"
+      params(1)%backend => nf90_ksg_counts
+
+      params(2)%name    = "C++"
+      params(2)%backend => cpp_ksg_counts
+
+      params(3)%name    = "CUDA"
+      params(3)%backend => cuda_ksg_counts
+   end function getBackendParams
+
+   ! ---------------------------------------------------------------------------
+   ! Setup / Teardown
+   ! ---------------------------------------------------------------------------
+
    subroutine setup(this)
-      class(mi_fixture), intent(inout) :: this
+      class(mi_case), intent(inout) :: this
       allocate(this%Mx(this%n_points))
       allocate(this%My(this%n_points))
-   end subroutine setup
+   end subroutine
 
    subroutine teardown(this)
-      class(mi_fixture), intent(inout) :: this
+      class(mi_case), intent(inout) :: this
       deallocate(this%Mx)
       deallocate(this%My)
-   end subroutine teardown
+   end subroutine
 
-   ! --------------------------------------------------------------------------
+   ! ---------------------------------------------------------------------------
+   ! Tests
+   ! ---------------------------------------------------------------------------
 
-   @Test
+   @test
    subroutine test_mutual_information_independent(this)
-      class(mi_fixture), intent(inout) :: this
-      real(real64) :: mi, mi_cpp, mi_cuda
+      class(mi_case), intent(inout) :: this
+      real(real64) :: mi
 
       call generate_independent_arrays(this%Mx, this%My, this%n_points)
 
-      call calc_mutual_information(this%Mx, this%My, this%n_points/2, mi)
-      call calc_mutual_information(this%Mx, this%My, this%n_points/2, mi_cpp, cpp_ksg_counts)
-      call calc_mutual_information(this%Mx, this%My, this%n_points/2, mi_cuda, cuda_ksg_counts)
+      call calc_mutual_information( &
+            this%Mx, this%My, this%n_points/2, mi, this%param%backend)
 
       @assertEqual(0.0_real64, mi, tolerance=0.01_real64)
-      @assertEqual(0.0_real64, mi_cpp, tolerance=0.01_real64)
-      @assertEqual(0.0_real64, mi_cuda, tolerance=0.01_real64)
    end subroutine
 
-   ! --------------------------------------------------------------------------
+   ! ---------------------------------------------------------------------------
 
-   @Test
+   @test
    subroutine test_mutual_information_analytic_gaussian(this)
-      class(mi_fixture), intent(inout) :: this
+      class(mi_case), intent(inout) :: this
       integer, parameter :: n_big = 4096
       integer :: k
       real(real64) :: Mx(n_big), My(n_big)
-      real(real64) :: mi, mi_cpp, mi_cuda
+      real(real64) :: mi
 
       call correlated_gaussian_arrays(Mx, My, n_big, 0.9_real64)
 
       k = int(n_big*0.04_real64 + 0.5_real64)
 
-      call calc_mutual_information(Mx, My, k, mi)
-      call calc_mutual_information(Mx, My, k, mi_cpp, cpp_ksg_counts)
-      call calc_mutual_information(Mx, My, k, mi_cuda, cuda_ksg_counts)
+      call calc_mutual_information(Mx, My, k, mi, this%param%backend)
 
       @assertEqual(0.830366_real64, mi, tolerance=0.05_real64)
-      @assertEqual(0.830366_real64, mi_cpp, tolerance=0.05_real64)
-      @assertEqual(0.830366_real64, mi_cuda, tolerance=0.05_real64)
    end subroutine
 
-   ! --------------------------------------------------------------------------
+   ! ---------------------------------------------------------------------------
 
-   @Test
+   @test
    subroutine test_analytic_gaussian_ratio(this)
-      class(mi_fixture), intent(inout) :: this
+      class(mi_case), intent(inout) :: this
       real(real64) :: mi_02, mi_04, mi_06
-      real(real64) :: mi_cpp_02, mi_cpp_04, mi_cpp_06
-      real(real64) :: mi_cuda_02, mi_cuda_04, mi_cuda_06
       integer :: k_02, k_04, k_06
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, 0.9_real64)
@@ -94,80 +134,67 @@ contains
       k_04 = int(this%n_points*0.04_real64 + 0.5_real64)
       k_06 = int(this%n_points*0.06_real64 + 0.5_real64)
 
-      call calc_mutual_information(this%Mx, this%My, k_02, mi_02)
-      call calc_mutual_information(this%Mx, this%My, k_04, mi_04)
-      call calc_mutual_information(this%Mx, this%My, k_06, mi_06)
+      call calc_mutual_information(this%Mx, this%My, k_02, mi_02, this%param%backend)
+      call calc_mutual_information(this%Mx, this%My, k_04, mi_04, this%param%backend)
+      call calc_mutual_information(this%Mx, this%My, k_06, mi_06, this%param%backend)
 
-      call calc_mutual_information(this%Mx, this%My, k_02, mi_cpp_02, cpp_ksg_counts)
-      call calc_mutual_information(this%Mx, this%My, k_04, mi_cpp_04, cpp_ksg_counts)
-      call calc_mutual_information(this%Mx, this%My, k_06, mi_cpp_06, cpp_ksg_counts)
-
-      call calc_mutual_information(this%Mx, this%My, k_02, mi_cuda_02, cuda_ksg_counts)
-      call calc_mutual_information(this%Mx, this%My, k_04, mi_cuda_04, cuda_ksg_counts)
-      call calc_mutual_information(this%Mx, this%My, k_06, mi_cuda_06, cuda_ksg_counts)
-
-      @assertEqual(.true., mi_02 > mi_04)
-      @assertEqual(.true., mi_04 > mi_06)
-      @assertEqual(.true., mi_cpp_02 > mi_cpp_04)
-      @assertEqual(.true., mi_cpp_04 > mi_cpp_06)
-      @assertEqual(.true., mi_cuda_02 > mi_cuda_04)
-      @assertEqual(.true., mi_cuda_04 > mi_cuda_06)
+      @assertTrue(mi_02 > mi_04)
+      @assertTrue(mi_04 > mi_06)
    end subroutine
 
-   ! --------------------------------------------------------------------------
+   ! ---------------------------------------------------------------------------
 
-   @Test
+   @test
    subroutine test_generalized_correlation_independent(this)
-      class(mi_fixture), intent(inout) :: this
-      real(real64) :: gc, gc_cpp, gc_cuda
+      class(mi_case), intent(inout) :: this
+      real(real64) :: gc
 
       call generate_independent_arrays(this%Mx, this%My, this%n_points)
 
-      call calc_generalized_correlation(this%Mx, this%My, this%n_points/2, gc)
-      call calc_generalized_correlation(this%Mx, this%My, this%n_points/2, gc_cpp, cpp_ksg_counts)
-      call calc_generalized_correlation(this%Mx, this%My, this%n_points/2, gc_cuda, cuda_ksg_counts)
+      call calc_generalized_correlation( &
+            this%Mx, this%My, this%n_points/2, gc, this%param%backend)
 
       @assertEqual(0.0_real64, gc, tolerance=0.15_real64)
-      @assertEqual(0.0_real64, gc_cpp, tolerance=0.15_real64)
-      @assertEqual(0.0_real64, gc_cuda, tolerance=0.15_real64)
    end subroutine
 
-   ! --------------------------------------------------------------------------
+   ! ---------------------------------------------------------------------------
 
-   @Test
+   @test
    subroutine test_generalized_correlation_non_negative(this)
-      class(mi_fixture), intent(inout) :: this
-      real(real64) :: gc, gc_cpp, gc_cuda, pearson_r
+      class(mi_case), intent(inout) :: this
+      real(real64) :: gc, pearson_r
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, -1.0_real64)
 
-      call calc_generalized_correlation(this%Mx, this%My, 4, gc)
-      call calc_generalized_correlation(this%Mx, this%My, 4, gc_cpp, cpp_ksg_counts)
-      call calc_generalized_correlation(this%Mx, this%My, 4, gc_cuda, cuda_ksg_counts)
+      call calc_generalized_correlation( &
+            this%Mx, this%My, 4, gc, this%param%backend)
 
       pearson_r = pearson_corr(this%Mx, this%My, this%n_points)
 
       @assertEqual(0.0_real64, gc + pearson_r, tolerance=0.1_real64)
-      @assertEqual(0.0_real64, gc_cpp + pearson_r, tolerance=0.1_real64)
-      @assertEqual(0.0_real64, gc_cuda + pearson_r, tolerance=0.1_real64)
    end subroutine
 
-   ! --------------------------------------------------------------------------
+   ! ---------------------------------------------------------------------------
 
-   @Test
+   @test
    subroutine test_generalized_correlation_non_linear(this)
-      class(mi_fixture), intent(inout) :: this
-      real(real64) :: gc, gc_cpp, gc_cuda
+      class(mi_case), intent(inout) :: this
+      real(real64) :: gc
 
       call sin_cos_arrays(this%Mx, this%My, this%n_points)
 
-      call calc_generalized_correlation(this%Mx, this%My, 4, gc)
-      call calc_generalized_correlation(this%Mx, this%My, 4, gc_cpp, cpp_ksg_counts)
-      call calc_generalized_correlation(this%Mx, this%My, 4, gc_cuda, cuda_ksg_counts)
+      call calc_generalized_correlation( &
+            this%Mx, this%My, 4, gc, this%param%backend)
 
       @assertEqual(1.0_real64, gc, tolerance=0.1_real64)
-      @assertEqual(1.0_real64, gc_cpp, tolerance=0.1_real64)
-      @assertEqual(1.0_real64, gc_cuda, tolerance=0.1_real64)
    end subroutine
+
+   ! ---------------------------------------------------------------------------
+
+   function toString(this) result(s)
+      class(BackendParam), intent(in) :: this
+      character(:), allocatable :: s
+      s = this%name
+   end function
 
 end module test_mutual_information
