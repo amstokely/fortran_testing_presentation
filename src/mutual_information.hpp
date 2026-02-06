@@ -58,8 +58,9 @@ namespace ksg {
         std::span<const std::size_t> idxs
     ) {
         double max_dist = 0.0;
-        for (auto i: idxs)
-            max_dist = std::max(max_dist, std::abs(X[i] - xref));
+        for (auto i: idxs) max_dist = std::max(
+                               max_dist, std::abs(X[i] - xref)
+                           );
         return max_dist;
     }
 
@@ -105,11 +106,6 @@ namespace ksg {
                 return max_norm(a) < max_norm(b);
             }
         );
-
-        // Now the first (k + 1) elements are the same ones
-        // that nth_element would have placed in front.
-
-
         double max_dx = 0.0;
         double max_dy = 0.0;
 
@@ -134,7 +130,7 @@ namespace ksg {
         void operator()(
             const std::span<const double> Mx,
             const std::span<const double> My, const int n_points,
-            const int k, int *nx, int *ny
+            const int k, int *mx_counts, int *my_counts
         ) const {
             for (int i = 0; i < n_points; ++i) {
                 const auto counts = cpp_ksg_count(
@@ -142,8 +138,8 @@ namespace ksg {
                     static_cast<std::size_t>(i),
                     static_cast<std::size_t>(k)
                 );
-                nx[i] = static_cast<int>(counts[0]);
-                ny[i] = static_cast<int>(counts[1]);
+                mx_counts[i] = static_cast<int>(counts[0]);
+                my_counts[i] = static_cast<int>(counts[1]);
             }
         }
     };
@@ -152,14 +148,18 @@ namespace ksg {
     ksg_counts(
         const std::span<const double> Mx,
         const std::span<const double> My, const int n_points,
-        const int k, int *nx, int *ny
+        const int k, int *mx_counts, int *my_counts
     ) {
-        KsgCountsStrategy{}(Mx, My, n_points, k, nx, ny);
+        KsgCountsStrategy{}(Mx, My, n_points, k, mx_counts, my_counts);
     }
 
-    void cuda_ksg_counts(
-        const double *mx, const double *my, int n_points, int k, int *mx_counts, int *my_counts
-    );
+
+    struct cuda_ksg_counts {
+        void operator()(
+            std::span<const double> Mx, std::span<const double> My,
+            int n_points, int k, int *mx_counts, int *my_counts
+        ) const;
+    };
 } // namespace ksg
 
 
@@ -167,20 +167,14 @@ namespace ksg {
 // C interface for Fortran (Mx/My version)
 // -----------------------------------------------------------------------------
 extern "C" {
-void c_cpp_ksg_count(
-    const double *Mx, const double *My, int n_points, int ref_idx,
-    // 0-based
-    int k, int &nx, int &ny
-);
-
 void c_cpp_ksg_counts(
-    const double *Mx, const double *My, int n_points, int k, int *nx,
-    int *ny
+    const double *Mx, const double *My, int n_points, int k,
+    int *mx_counts, int *my_counts
 );
 
 void c_cuda_ksg_counts(
-    const double *Mx, const double *My, int n_points, int k, int *nx,
-    int *ny
+    const double *Mx, const double *My, int n_points, int k,
+    int *mx_counts, int *my_counts
 );
 }
 

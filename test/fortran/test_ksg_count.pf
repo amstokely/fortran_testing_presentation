@@ -104,13 +104,10 @@ contains
       class(ksg_count_fixture), intent(inout) :: this
 
       integer :: nf90_nx, nf90_ny
-      integer :: cpp_nx, cpp_ny
 
       call nf90_ksg_count(this%Mx, this%My, 1, 3, nf90_nx, nf90_ny)
-      call cpp_ksg_count(this%Mx, this%My, 1, 3, cpp_nx, cpp_ny)
 
       @assertEqual([3, 6], [nf90_nx, nf90_ny])
-      @assertEqual([3, 6], [cpp_nx, cpp_ny])
    end subroutine
 
    @Test

@@ -115,7 +115,9 @@ template<int LocalMSize> __global__ void ksg_counts_kernel(
             l_m_idx = 0;
             while (idx < n_points) {
                 const double dX = fmax(
-                    abs(l_mx_i - l_mx[l_m_idx]), abs(l_my_i - l_my[l_m_idx])
+                    abs(l_mx_i - l_mx[l_m_idx]), abs(
+                        l_my_i - l_my[l_m_idx]
+                    )
                 );
                 if (dX < l_min) {
                     l_min = dX;
@@ -185,9 +187,11 @@ template<int LocalMSize> __global__ void ksg_counts_kernel(
         l_m_idx = 0;
         while (idx < n_points) {
             s_mx_counts[l_tidx] +=
-                    (abs(l_mx[l_m_idx] - l_mx_i) <= s_eps_mx[0]) ? 1 : 0;
+                    (abs(l_mx[l_m_idx] - l_mx_i) <= s_eps_mx[0]) ? 1
+                        : 0;
             s_my_counts[l_tidx] +=
-                    (abs(l_my[l_m_idx] - l_my_i) <= s_eps_my[0]) ? 1 : 0;
+                    (abs(l_my[l_m_idx] - l_my_i) <= s_eps_my[0]) ? 1
+                        : 0;
             l_m_idx++;
             idx += blockDim.x;
         }
@@ -248,17 +252,18 @@ template<int... I> void dispatch_kernel(
 }
 
 namespace ksg {
-    void cuda_ksg_counts(
-        const double *mx, const double *my, const int n_points,
+    void cuda_ksg_counts::operator()(
+        const std::span<const double> Mx,
+        const std::span<const double> My, const int n_points,
         const int k, int *mx_counts, int *my_counts
-    ) {
+    ) const {
         const auto cuda_mx = CudaArray<double>(n_points);
         const auto cuda_my = CudaArray<double>(n_points);
-        const auto cuda_nx = CudaArray<int>(n_points);
-        const auto cuda_ny = CudaArray<int>(n_points);
+        const auto cuda_mx_counts= CudaArray<int>(n_points);
+        const auto cuda_my_counts = CudaArray<int>(n_points);
 
-        cuda_mx.to_device(mx);
-        cuda_my.to_device(my);
+        cuda_mx.to_device(Mx.data());
+        cuda_my.to_device(My.data());
 
 
         const auto config = CudaConfig(n_points);
@@ -266,11 +271,11 @@ namespace ksg {
         dispatch_kernel(
             config.local_m_size, std::make_integer_sequence<int, 101>{},
             cuda_mx.d_array, cuda_my.d_array, k, n_points,
-            cuda_nx.d_array, cuda_ny.d_array, config.grid_dim_x,
+            cuda_mx_counts.d_array, cuda_my_counts.d_array, config.grid_dim_x,
             config.block_dim_x
         );
 
-        cuda_nx.to_host(mx_counts);
-        cuda_ny.to_host(my_counts);
+        cuda_mx_counts.to_host(mx_counts);
+        cuda_my_counts.to_host(my_counts);
     }
 }

@@ -31,6 +31,8 @@ module test_mutual_information
    contains
       procedure :: setup
       procedure :: teardown
+      procedure :: test_mutual_information_independent
+      procedure :: test_analytic_gaussian_ratio
    end type mi_case
 
    interface mi_case
@@ -125,7 +127,7 @@ contains
    @test
    subroutine test_analytic_gaussian_ratio(this)
       class(mi_case), intent(inout) :: this
-      real(real64) :: mi_02, mi_04, mi_06
+      real(real64) :: mi_02, mi_04, mi_06, gc, pearson_r
       integer :: k_02, k_04, k_06
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, 0.9_real64)
@@ -156,9 +158,9 @@ contains
 
       @assertEqual(0.0_real64, gc, tolerance=0.15_real64)
    end subroutine
-
-   ! ---------------------------------------------------------------------------
-
+!
+!   ! ---------------------------------------------------------------------------
+!
    @test
    subroutine test_generalized_correlation_non_negative(this)
       class(mi_case), intent(inout) :: this

@@ -72,7 +72,7 @@ int main() {
             when("running the complete ksg_count cuda algorithm") = [&] {
                 auto nx = new int[8];
                 auto ny = new int[8];
-                ksg::cuda_ksg_counts(Mx.data(), My.data(),
+                ksg::ksg_counts<ksg::cuda_ksg_counts>(Mx, My,
                                      static_cast<int>(Mx.size()),
                                      /*k*/ 3,
                                         nx, ny);

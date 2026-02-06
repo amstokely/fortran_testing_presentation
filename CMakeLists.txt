@@ -5,8 +5,9 @@ enable_testing()
 find_package(CUDA REQUIRED)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 
-set(PFUNIT_DIR "/Users/astokely/software/pFUnit/build/installed/PFUNIT-4.10/cmake")
+set(PFUNIT_DIR "/home/astokely/software/pFUnit/build/installed/PFUNIT-4.10/cmake")
 find_package(PFUNIT REQUIRED)
 
 include_directories(external)
