@@ -5,7 +5,7 @@ module test_mutual_information
    use cpp_mutual_information
 #ifdef CUDA_SUPPORT
    use cuda_mutual_information
-   #endif
+#endif
    use test_utils
    implicit none
 
