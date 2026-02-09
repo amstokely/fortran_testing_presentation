@@ -19,7 +19,7 @@ target_include_directories(mutual_information_cpp INTERFACE
         $<INSTALL_INTERFACE:include>
 )
 if (ENABLE_CUDA)
-    target_link_libraries(mutual_information_cpp PRIVATE mutual_information_cuda)
+    target_link_libraries(mutual_information_cpp PUBLIC mutual_information_cuda)
 endif ()
 
 if (ENABLE_CUDA)
