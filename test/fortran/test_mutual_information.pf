@@ -1,5 +1,5 @@
 module test_mutual_information
-   use iso_fortran_env, only: real64
+   use iso_fortran_env, only : real64
    use funit
    use mutual_information
    use cpp_mutual_information
@@ -8,24 +8,24 @@ module test_mutual_information
    implicit none
 
    ! ---------------------------------------------------------------------------
-   ! Backend test parameter
+   ! KsgCountsStrategy test parameter
    ! ---------------------------------------------------------------------------
 
    @testParameter
-   type, extends(AbstractTestParameter) :: BackendParam
-      character(len=:), allocatable :: name
-      procedure(ksg_counts_i), pointer, nopass :: backend
+   type, extends(AbstractTestParameter) :: KsgCountsStrategyParam
+      character(len = :), allocatable :: name
+      procedure(ksg_counts_i), pointer, nopass :: ksg_counts_strategy
    contains
       procedure :: toString
-   end type BackendParam
+   end type KsgCountsStrategyParam
 
    ! ---------------------------------------------------------------------------
    ! Parameterized test case
    ! ---------------------------------------------------------------------------
 
-   @testCase(constructor=make_case, testParameters={getBackendParams()})
+   @testCase(constructor = make_case, testParameters = {getKsgCountsStrategyParams()})
    type, extends(ParameterizedTestCase) :: mi_case
-      type(BackendParam) :: param
+      type(KsgCountsStrategyParam) :: param
       integer :: n_points = 1024
       real(real64), allocatable :: Mx(:), My(:)
    contains
@@ -41,38 +41,32 @@ module test_mutual_information
 
 contains
 
-   ! ---------------------------------------------------------------------------
-   ! Constructor
-   ! ---------------------------------------------------------------------------
-
    function make_case(param) result(this)
-      class(BackendParam), intent(in) :: param
+      class(KsgCountsStrategyParam), intent(in) :: param
       type(mi_case) :: this
       this%param = param
    end function make_case
 
-   ! ---------------------------------------------------------------------------
-   ! Backend list
-   ! ---------------------------------------------------------------------------
+   function getKsgCountsStrategyParams() result(params)
+      type(KsgCountsStrategyParam), allocatable :: params(:)
 
-   function getBackendParams() result(params)
-      type(BackendParam), allocatable :: params(:)
-
+#ifdef CUDA_SUPPORT
       allocate(params(3))
+#else
+      allocate(params(2))
+#endif
 
-      params(1)%name    = "Fortran"
-      params(1)%backend => nf90_ksg_counts
+      params(1)%name = "Fortran"
+      params(1)%ksg_counts_strategy => f90_ksg_counts
 
-      params(2)%name    = "C++"
-      params(2)%backend => cpp_ksg_counts
+      params(2)%name = "C++"
+      params(2)%ksg_counts_strategy => cpp_ksg_counts
 
+#ifdef CUDA_SUPPORT
       params(3)%name    = "CUDA"
-      params(3)%backend => cuda_ksg_counts
-   end function getBackendParams
-
-   ! ---------------------------------------------------------------------------
-   ! Setup / Teardown
-   ! ---------------------------------------------------------------------------
+      params(3)%ksg_counts_strategy => cuda_ksg_counts
+#endif
+   end function getKsgCountsStrategyParams
 
    subroutine setup(this)
       class(mi_case), intent(inout) :: this
@@ -97,10 +91,10 @@ contains
 
       call generate_independent_arrays(this%Mx, this%My, this%n_points)
 
-      call calc_mutual_information( &
-            this%Mx, this%My, this%n_points/2, mi, this%param%backend)
+      call calc_mutual_information(&
+            this%Mx, this%My, this%n_points / 2, mi, this%param%ksg_counts_strategy)
 
-      @assertEqual(0.0_real64, mi, tolerance=0.01_real64)
+      @assertEqual(0.0_real64, mi, tolerance = 0.01_real64)
    end subroutine
 
    ! ---------------------------------------------------------------------------
@@ -115,11 +109,11 @@ contains
 
       call correlated_gaussian_arrays(Mx, My, n_big, 0.9_real64)
 
-      k = int(n_big*0.04_real64 + 0.5_real64)
+      k = int(n_big * 0.04_real64 + 0.5_real64)
 
-      call calc_mutual_information(Mx, My, k, mi, this%param%backend)
+      call calc_mutual_information(Mx, My, k, mi, this%param%ksg_counts_strategy)
 
-      @assertEqual(0.830366_real64, mi, tolerance=0.05_real64)
+      @assertEqual(0.830366_real64, mi, tolerance = 0.05_real64)
    end subroutine
 
    ! ---------------------------------------------------------------------------
@@ -132,13 +126,13 @@ contains
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, 0.9_real64)
 
-      k_02 = int(this%n_points*0.02_real64 + 0.5_real64)
-      k_04 = int(this%n_points*0.04_real64 + 0.5_real64)
-      k_06 = int(this%n_points*0.06_real64 + 0.5_real64)
+      k_02 = int(this%n_points * 0.02_real64 + 0.5_real64)
+      k_04 = int(this%n_points * 0.04_real64 + 0.5_real64)
+      k_06 = int(this%n_points * 0.06_real64 + 0.5_real64)
 
-      call calc_mutual_information(this%Mx, this%My, k_02, mi_02, this%param%backend)
-      call calc_mutual_information(this%Mx, this%My, k_04, mi_04, this%param%backend)
-      call calc_mutual_information(this%Mx, this%My, k_06, mi_06, this%param%backend)
+      call calc_mutual_information(this%Mx, this%My, k_02, mi_02, this%param%ksg_counts_strategy)
+      call calc_mutual_information(this%Mx, this%My, k_04, mi_04, this%param%ksg_counts_strategy)
+      call calc_mutual_information(this%Mx, this%My, k_06, mi_06, this%param%ksg_counts_strategy)
 
       @assertTrue(mi_02 > mi_04)
       @assertTrue(mi_04 > mi_06)
@@ -153,14 +147,14 @@ contains
 
       call generate_independent_arrays(this%Mx, this%My, this%n_points)
 
-      call calc_generalized_correlation( &
-            this%Mx, this%My, this%n_points/2, gc, this%param%backend)
+      call calc_generalized_correlation(&
+            this%Mx, this%My, this%n_points / 2, gc, this%param%ksg_counts_strategy)
 
-      @assertEqual(0.0_real64, gc, tolerance=0.15_real64)
+      @assertEqual(0.0_real64, gc, tolerance = 0.15_real64)
    end subroutine
-!
-!   ! ---------------------------------------------------------------------------
-!
+   !
+   !   ! ---------------------------------------------------------------------------
+   !
    @test
    subroutine test_generalized_correlation_non_negative(this)
       class(mi_case), intent(inout) :: this
@@ -168,12 +162,12 @@ contains
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, -1.0_real64)
 
-      call calc_generalized_correlation( &
-            this%Mx, this%My, 4, gc, this%param%backend)
+      call calc_generalized_correlation(&
+            this%Mx, this%My, 4, gc, this%param%ksg_counts_strategy)
 
       pearson_r = pearson_corr(this%Mx, this%My, this%n_points)
 
-      @assertEqual(0.0_real64, gc + pearson_r, tolerance=0.1_real64)
+      @assertEqual(0.0_real64, gc + pearson_r, tolerance = 0.1_real64)
    end subroutine
 
    ! ---------------------------------------------------------------------------
@@ -185,16 +179,16 @@ contains
 
       call sin_cos_arrays(this%Mx, this%My, this%n_points)
 
-      call calc_generalized_correlation( &
-            this%Mx, this%My, 4, gc, this%param%backend)
+      call calc_generalized_correlation(&
+            this%Mx, this%My, 4, gc, this%param%ksg_counts_strategy)
 
-      @assertEqual(1.0_real64, gc, tolerance=0.1_real64)
+      @assertEqual(1.0_real64, gc, tolerance = 0.1_real64)
    end subroutine
 
    ! ---------------------------------------------------------------------------
 
    function toString(this) result(s)
-      class(BackendParam), intent(in) :: this
+      class(KsgCountsStrategyParam), intent(in) :: this
       character(:), allocatable :: s
       s = this%name
    end function

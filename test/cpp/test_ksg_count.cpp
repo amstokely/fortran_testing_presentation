@@ -6,13 +6,12 @@
 
 using namespace boost::ut;
 using namespace boost::ut::bdd;
-using real64 = double;
 
 int main() {
     "KSG helper algorithms"_test = [] {
         given("the same 8-point dataset as the Fortran fixture") = [] {
-            const std::vector<real64> Mx{1, 4, 6, 3, 5, 2, 7, 8};
-            const std::vector<real64> My{5, 6, 4, 8, 1, 7, 2, 3};
+            const std::vector<double> Mx{1, 4, 6, 3, 5, 2, 7, 8};
+            const std::vector<double> My{5, 6, 4, 8, 1, 7, 2, 3};
 
             when("computing max-norm distances from the reference point") = [&
             ] {
@@ -20,22 +19,22 @@ int main() {
                     Mx, My, Mx[0], My[0]);
 
                 then("the distances match the Fortran reference values") = [&] {
-                    constexpr std::array<real64, 8> expected{
+                    constexpr std::array<double, 8> expected{
                         0, 3, 5, 3, 4, 2, 6, 7
                     };
-                    for (std::size_t i = 0; i < 8; ++i) expect(
-                        approx(dists[i], expected[i], 1e-12));
+                    for (std::size_t i = 0; i < 8; ++i)
+                        expect(approx(dists[i], expected[i], 1e-12));
                 };
             };
 
             when("finding the k smallest indices") = [] {
-                const std::vector<real64> X{0, 3, 5, 3, 4, 2, 6, 7};
+                const std::vector<double> X{0, 3, 5, 3, 4, 2, 6, 7};
                 auto idxs = ksg::k_argsort(X, 4);
 
                 then("the indices match the Fortran argsort") = [&] {
                     constexpr std::array<std::size_t, 4> expected{0, 5, 1, 3};
-                    for (std::size_t i = 0; i < 4; ++i) expect(
-                        idxs[i] == expected[i]);
+                    for (std::size_t i = 0; i < 4; ++i)
+                        expect(idxs[i] == expected[i]);
                 };
             };
 
@@ -60,8 +59,7 @@ int main() {
             };
 
             when("running the complete ksg_count algorithm") = [&] {
-                const auto count = ksg::cpp_ksg_count(
-                    Mx, My, /*ref_idx*/ 0, /*k*/ 3);
+                const auto count = ksg::cpp_ksg_count(Mx, My, 0, 3);
 
                 then("the (nx, ny) counts match the Fortran implementation") = [
                     &] {
@@ -69,13 +67,13 @@ int main() {
                     expect(count[1] == 6u);
                 };
             };
+#ifdef CUDA_SUPPORT
             when("running the complete ksg_count cuda algorithm") = [&] {
                 auto nx = new int[8];
                 auto ny = new int[8];
-                ksg::ksg_counts<ksg::cuda_ksg_counts>(Mx, My,
-                                     static_cast<int>(Mx.size()),
-                                     /*k*/ 3,
-                                        nx, ny);
+                ksg::ksg_counts<ksg::cuda_ksg_counts>(
+                    Mx, My, static_cast<int>(Mx.size()),
+                    /*k*/ 3, nx, ny);
 
                 then("the (nx, ny) counts match the Fortran implementation") = [
                     &] {
@@ -85,6 +83,7 @@ int main() {
                 delete [] nx;
                 delete [] ny;
             };
+#endif
         };
     };
 }

@@ -1,12 +1,14 @@
-add_library(mutual_information_cuda SHARED mutual_information.cu)
-set_target_properties(mutual_information_cuda PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON
-        LINKER_LANGUAGE CUDA
-)
-target_include_directories(mutual_information_cuda INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
+if (ENABLE_CUDA)
+    add_library(mutual_information_cuda SHARED mutual_information.cu)
+    set_target_properties(mutual_information_cuda PROPERTIES
+            CUDA_SEPARABLE_COMPILATION ON
+            LINKER_LANGUAGE CUDA
+    )
+    target_include_directories(mutual_information_cuda INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<INSTALL_INTERFACE:include>
+    )
+endif ()
 
 add_library(mutual_information_cpp SHARED mutual_information.cpp)
 set_target_properties(mutual_information_cpp PROPERTIES
@@ -16,13 +18,22 @@ target_include_directories(mutual_information_cpp INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(mutual_information_cpp PRIVATE mutual_information_cuda)
+if (ENABLE_CUDA)
+    target_link_libraries(mutual_information_cpp PRIVATE mutual_information_cuda)
+endif ()
 
-add_library(mutual_information SHARED
-        mutual_information.f90
-        cpp_mutual_information.f90
-        cuda_mutual_information.f90
-)
+if (ENABLE_CUDA)
+    add_library(mutual_information SHARED
+            mutual_information.f90
+            cpp_mutual_information.f90
+            cuda_mutual_information.f90
+    )
+else ()
+    add_library(mutual_information SHARED
+            mutual_information.f90
+            cpp_mutual_information.f90
+    )
+endif ()
 target_link_libraries(mutual_information PRIVATE mutual_information_cpp)
 target_include_directories(mutual_information INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>

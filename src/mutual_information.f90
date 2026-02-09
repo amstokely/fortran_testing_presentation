@@ -4,21 +4,21 @@ module mutual_information
    implicit none
 
    abstract interface
-      subroutine ksg_count_i(Mx, My, ref_idx, k, nx, ny)
+      subroutine ksg_count_i(Mx, My, ref_idx, k, mx_counts, my_counts)
          import :: real64
          real(real64), intent(in) :: Mx(:), My(:)
          integer, intent(in)      :: ref_idx
          integer, intent(in)      :: k
-         integer, intent(out)     :: nx, ny
+         integer, intent(out)     :: mx_counts, my_counts
       end subroutine
    end interface
 
    abstract interface
-      subroutine ksg_counts_i(Mx, My, k, nx, ny)
+      subroutine ksg_counts_i(Mx, My, k, mx_counts, my_counts)
          import :: real64
          real(real64), intent(in) :: Mx(:), My(:)
          integer, intent(in)      :: k
-         integer, intent(out)     :: nx(size(Mx)), ny(size(My))
+         integer, intent(out)     :: mx_counts(size(Mx)), my_counts(size(My))
       end subroutine
    end interface
 
@@ -103,12 +103,12 @@ contains
    end subroutine count_neighbors_within_radius
 
    ! --------------------------------------------------------------------------
-   subroutine nf90_ksg_count(Mx, My, ref_idx, k, nx, ny)
+   subroutine f90_ksg_count(Mx, My, ref_idx, k, mx_counts, my_counts)
       real(real64), intent(in) :: Mx(:), My(:)
       integer, intent(in)      :: ref_idx
       integer, intent(in)      :: k
-      integer, intent(out)     :: nx
-      integer, intent(out)     :: ny
+      integer, intent(out)     :: mx_counts
+      integer, intent(out)     :: my_counts
 
       integer :: n_points
       real(real64), allocatable :: dists(:)
@@ -125,17 +125,17 @@ contains
       call max_neighbor_distance(Mx, Mx(ref_idx), neighbor_idxs(2:k+1), max_dist_x)
       call max_neighbor_distance(My, My(ref_idx), neighbor_idxs(2:k+1), max_dist_y)
 
-      call count_neighbors_within_radius(Mx, Mx(ref_idx), max_dist_x, nx)
-      call count_neighbors_within_radius(My, My(ref_idx), max_dist_y, ny)
+      call count_neighbors_within_radius(Mx, Mx(ref_idx), max_dist_x, mx_counts)
+      call count_neighbors_within_radius(My, My(ref_idx), max_dist_y, my_counts)
 
       deallocate(dists, neighbor_idxs)
-   end subroutine nf90_ksg_count
+   end subroutine f90_ksg_count
 
-   subroutine nf90_ksg_counts(Mx, My, k, nx, ny)
+   subroutine f90_ksg_counts(Mx, My, k, mx_counts, my_counts)
       real(real64), intent(in) :: Mx(:), My(:)
       integer, intent(in)      :: k
-      integer, intent(out)     :: nx(size(Mx))
-      integer, intent(out)     :: ny(size(My))
+      integer, intent(out)     :: mx_counts(size(Mx))
+      integer, intent(out)     :: my_counts(size(My))
 
       integer :: n_points
       integer :: i
@@ -143,9 +143,9 @@ contains
       n_points = size(Mx)
 
       do i = 1, n_points
-         call nf90_ksg_count(Mx, My, i, k, nx(i), ny(i))
+         call f90_ksg_count(Mx, My, i, k, mx_counts(i), my_counts(i))
       end do
-   end subroutine nf90_ksg_counts
+   end subroutine f90_ksg_counts
 
    ! --------------------------------------------------------------------------
    subroutine calc_mutual_information(Mx, My, k, mi, ksg_counts_strategy)
@@ -155,7 +155,7 @@ contains
       procedure(ksg_counts_i), optional :: ksg_counts_strategy
 
       integer :: n_points, i
-      integer :: nx(size(Mx)), ny(size(My))
+      integer :: mx_counts(size(Mx)), my_counts(size(My))
       real(real64), allocatable :: psi(:)
       real(real64), parameter :: gamma = -0.5772156649015328606_real64
       real(real64) :: avg_psi_ksg_sum
@@ -164,7 +164,7 @@ contains
       if (present(ksg_counts_strategy)) then
          ksg_counts => ksg_counts_strategy
       else
-         ksg_counts => nf90_ksg_counts
+         ksg_counts => f90_ksg_counts
       end if
 
       n_points = size(Mx)
@@ -176,10 +176,10 @@ contains
       end do
 
       avg_psi_ksg_sum = 0.0_real64
-      call ksg_counts(Mx, My, k, nx, ny)
+      call ksg_counts(Mx, My, k, mx_counts, my_counts)
       do i = 1, n_points
          avg_psi_ksg_sum = avg_psi_ksg_sum + &
-               (psi(nx(i) + 1) + psi(ny(i) + 1))
+               (psi(mx_counts(i) + 1) + psi(my_counts(i) + 1))
       end do
 
       avg_psi_ksg_sum = avg_psi_ksg_sum / real(n_points, real64)
@@ -202,7 +202,7 @@ contains
       if (present(ksg_counts_strategy)) then
          ksg_counts => ksg_counts_strategy
       else
-         ksg_counts => nf90_ksg_counts
+         ksg_counts => f90_ksg_counts
       end if
 
       call calc_mutual_information(Mx, My, k, mi, ksg_counts)

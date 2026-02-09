@@ -7,7 +7,6 @@
 #include "test_utils.hpp"
 
 namespace test_utils {
-
     // -----------------------------------------------------------------------------
     // Internal RNG seeded similarly to Fortran's system_clock seeding
     // -----------------------------------------------------------------------------
@@ -28,13 +27,13 @@ namespace test_utils {
     // -----------------------------------------------------------------------------
     // 1) Independent uniform arrays in [0,1)
     // -----------------------------------------------------------------------------
-    inline void generate_independent_arrays(std::vector<real64> &a,
-                                            std::vector<real64> &b,
-                                            std::size_t n) {
+    inline void generate_independent_arrays(std::vector<double> &a,
+                                            std::vector<double> &b,
+                                            const std::size_t n) {
         a.resize(n);
         b.resize(n);
 
-        std::uniform_real_distribution<real64> dist(0.0, 1.0);
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
 
         for (std::size_t i = 0; i < n; ++i) {
             a[i] = dist(rng());
@@ -45,30 +44,30 @@ namespace test_utils {
     // -----------------------------------------------------------------------------
     // 2) Correlated Gaussian arrays via Box–Muller transform
     // -----------------------------------------------------------------------------
-    inline void correlated_gaussian_arrays(std::vector<real64> &x,
-                                           std::vector<real64> &y,
-                                           std::size_t n_point, real64 rho) {
-        constexpr real64 pi = 3.1415926535897932384626433832795;
-        const real64 s = std::sqrt(1.0 - rho * rho);
+    inline void correlated_gaussian_arrays(std::vector<double> &x,
+                                           std::vector<double> &y,
+                                           std::size_t n_point, double rho) {
+        constexpr double pi = 3.1415926535897932384626433832795;
+        const double s = std::sqrt(1.0 - rho * rho);
 
         x.resize(n_point);
         y.resize(n_point);
 
-        std::uniform_real_distribution<real64> dist(0.0, 1.0);
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
 
         for (std::size_t i = 0; i < n_point; ++i) {
-            real64 u1 = dist(rng());
-            real64 u2 = dist(rng());
+            double u1 = dist(rng());
+            const double u2 = dist(rng());
 
             if (u1 <= 1e-12) {
                 u1 = 1e-12; // avoid log(0)
             }
 
-            const real64 r = std::sqrt(-2.0 * std::log(u1));
-            const real64 theta = 2.0 * pi * u2;
+            const double r = std::sqrt(-2.0 * std::log(u1));
+            const double theta = 2.0 * pi * u2;
 
-            real64 gx = r * std::cos(theta);
-            real64 gy = r * std::sin(theta);
+            const double gx = r * std::cos(theta);
+            const double gy = r * std::sin(theta);
 
             x[i] = gx;
             y[i] = rho * gx + s * gy;
@@ -78,20 +77,20 @@ namespace test_utils {
     // -----------------------------------------------------------------------------
     // 3) Pearson correlation
     // -----------------------------------------------------------------------------
-    inline real64 pearson_corr(const std::vector<real64> &x,
-                               const std::vector<real64> &y) {
+    inline double pearson_corr(const std::vector<double> &x,
+                               const std::vector<double> &y) {
         const std::size_t n = x.size();
 
-        const real64 mx = std::accumulate(x.begin(), x.end(), 0.0) / n;
-        const real64 my = std::accumulate(y.begin(), y.end(), 0.0) / n;
+        const double mx = std::accumulate(x.begin(), x.end(), 0.0) / n;
+        const double my = std::accumulate(y.begin(), y.end(), 0.0) / n;
 
-        real64 sx = 0.0;
-        real64 sy = 0.0;
-        real64 sxy = 0.0;
+        double sx = 0.0;
+        double sy = 0.0;
+        double sxy = 0.0;
 
         for (std::size_t i = 0; i < n; ++i) {
-            const real64 dx = x[i] - mx;
-            const real64 dy = y[i] - my;
+            const double dx = x[i] - mx;
+            const double dy = y[i] - my;
             sx += dx * dx;
             sy += dy * dy;
             sxy += dx * dy;
@@ -103,20 +102,19 @@ namespace test_utils {
     // -----------------------------------------------------------------------------
     // 4) sin/cos paired arrays from uniform angle
     // -----------------------------------------------------------------------------
-    inline void sin_cos_arrays(std::vector<real64> &x, std::vector<real64> &y,
+    inline void sin_cos_arrays(std::vector<double> &x, std::vector<double> &y,
                                std::size_t n) {
-        constexpr real64 pi = 3.1415926535897932384626433832795;
+        constexpr double pi = 3.1415926535897932384626433832795;
 
         x.resize(n);
         y.resize(n);
 
-        std::uniform_real_distribution<real64> dist(0.0, 1.0);
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
 
         for (std::size_t i = 0; i < n; ++i) {
-            real64 theta = 2.0 * pi * dist(rng());
+            double theta = 2.0 * pi * dist(rng());
             x[i] = std::sin(theta);
             y[i] = std::cos(theta);
         }
     }
 } // namespace test_utils
-

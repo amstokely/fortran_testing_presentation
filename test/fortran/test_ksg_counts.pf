@@ -1,0 +1,110 @@
+module test_ksg_counts
+   use iso_fortran_env, only: real64
+   use funit
+   use mutual_information
+   use cpp_mutual_information
+#ifdef CUDA_SUPPORT
+   use cuda_mutual_information
+#endif
+   use test_utils
+
+   implicit none
+
+   @testParameter
+   type, extends(AbstractTestParameter) :: KsgCountsStrategyParam
+      character(len=:), allocatable :: name
+      procedure(ksg_counts_i), pointer, nopass :: ksg_counts_strategy
+   contains
+      procedure :: toString
+   end type KsgCountsStrategyParam
+
+   ! ---------------------------------------------------------------------------
+   ! Parameterized test case
+   ! ---------------------------------------------------------------------------
+
+   @testCase(constructor=make_case, testParameters={getKsgCountsStrategyParams()})
+   type, extends(ParameterizedTestCase) :: ksg_counts_case
+      type(KsgCountsStrategyParam) :: param
+      real(real64) :: Mx(8)
+      real(real64) :: My(8)
+   contains
+      procedure :: setup
+      procedure :: test_ksg_counts_complete
+   end type
+
+   interface ksg_counts_case
+      module procedure make_case
+   end interface
+
+contains
+
+   function make_case(param) result(this)
+      class(KsgCountsStrategyParam), intent(in) :: param
+      type(ksg_counts_case) :: this
+      this%param = param
+   end function make_case
+
+   ! ---------------------------------------------------------------------------
+
+   function getKsgCountsStrategyParams() result(params)
+      type(KsgCountsStrategyParam), allocatable :: params(:)
+
+#ifdef CUDA_SUPPORT
+      allocate(params(3))
+#else
+      allocate(params(2))
+#endif
+
+      params(1)%name    = "Fortran"
+      params(1)%ksg_counts_strategy => f90_ksg_counts
+
+      params(2)%name    = "C++"
+      params(2)%ksg_counts_strategy => cpp_ksg_counts
+
+#ifdef CUDA_SUPPORT
+      params(3)%name    = "CUDA"
+      params(3)%ksg_counts_strategy => cuda_ksg_counts
+#endif
+   end function getKsgCountsStrategyParams
+
+   ! ---------------------------------------------------------------------------
+
+   subroutine setup(this)
+      class(ksg_counts_case), intent(inout) :: this
+
+      this%Mx = [1.0_real64, 4.0_real64, &
+            6.0_real64, 3.0_real64, &
+            5.0_real64, 2.0_real64, &
+            7.0_real64, 8.0_real64]
+
+      this%My = [5.0_real64, 6.0_real64, &
+            4.0_real64, 8.0_real64, &
+            1.0_real64, 7.0_real64, &
+            2.0_real64, 3.0_real64]
+   end subroutine setup
+
+   ! ---------------------------------------------------------------------------
+
+   function toString(this) result(s)
+      class(KsgCountsStrategyParam), intent(in) :: this
+      character(:), allocatable :: s
+      s = this%name
+   end function toString
+
+   ! ---------------------------------------------------------------------------
+
+   @Test
+   subroutine test_ksg_counts_complete(this)
+      class(ksg_counts_case), intent(inout) :: this
+
+      integer :: mx_counts(8), my_counts(8)
+
+      call this%param%ksg_counts_strategy( &
+            this%Mx, this%My, 3, mx_counts, my_counts )
+
+      call assertEqual( &
+            [3, 6], [mx_counts(1), my_counts(1)], &
+            message="ksg_counts: wrong nx, ny for first sample with k=3 for "//this%param%name )
+   end subroutine
+
+end module test_ksg_counts
