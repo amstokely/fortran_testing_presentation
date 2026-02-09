@@ -1,6 +1,7 @@
 #include "mutual_information.hpp"
 #include "mutual_information.cuh"
 #include "config.hpp"
+#include <stdexcept>
 
 extern "C" {
 void c_cpp_ksg_counts(

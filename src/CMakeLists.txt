@@ -22,6 +22,9 @@ endif()
 set_target_properties(mutual_information_cpp PROPERTIES
         LINKER_LANGUAGE CXX
 )
+target_include_directories(mutual_information_cpp PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 target_include_directories(mutual_information_cpp INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
