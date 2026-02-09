@@ -101,7 +101,7 @@ namespace ksg {
     struct cpp_ksg_counts {
         void operator()(const std::span<const double> Mx,
                         const std::span<const double> My, const int n_points,
-                        const int k, int *mx_counts, int *my_counts) const {
+                        const int k, std::span<int> mx_counts, std::span<int> my_counts) const {
             for (int i = 0; i < n_points; ++i) {
                 auto [mx, my] = cpp_ksg_count(Mx.subspan(0, n_points),
                                               My.subspan(0, n_points),
@@ -118,7 +118,7 @@ namespace ksg {
     void
     ksg_counts(const std::span<const double> Mx,
                const std::span<const double> My, const int n_points,
-               const int k, int *mx_counts, int *my_counts) {
+               const int k, std::span<int> mx_counts, std::span<int> my_counts) {
         KsgCountsStrategy{}(Mx, My, n_points, k, mx_counts, my_counts);
     }
 } // namespace ksg
@@ -131,10 +131,8 @@ extern "C" {
 void c_cpp_ksg_counts(const double *Mx, const double *My, int n_points, int k,
                       int *mx_counts, int *my_counts);
 
-#ifdef CUDA_SUPPORT
 void c_cuda_ksg_counts(const double *Mx, const double *My, int n_points, int k,
                        int *mx_counts, int *my_counts);
-#endif
 }
 
 #endif // MUTUAL_INFORMATION_HPP

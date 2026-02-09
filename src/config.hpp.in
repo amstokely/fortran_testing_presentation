@@ -1,0 +1,7 @@
+#pragma once
+
+#cmakedefine01 ENABLE_CUDA
+
+namespace config {
+    inline constexpr bool cuda_enabled = ENABLE_CUDA;
+}

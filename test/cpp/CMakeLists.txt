@@ -3,11 +3,7 @@ set_target_properties(
         test_ksg_count_cpp PROPERTIES
         LINKER_LANGUAGE CXX
 )
-if (ENABLE_CUDA)
-    target_link_libraries(test_ksg_count_cpp PRIVATE test_utils_cpp mutual_information_cpp mutual_information_cuda)
-else ()
-    target_link_libraries(test_ksg_count_cpp PRIVATE test_utils_cpp mutual_information_cpp)
-endif ()
+target_link_libraries(test_ksg_count_cpp PRIVATE test_utils_cpp mutual_information_cpp project_options)
 add_test(
         NAME test_ksg_count_cpp
         COMMAND test_ksg_count_cpp
