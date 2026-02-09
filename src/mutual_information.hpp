@@ -121,15 +121,6 @@ namespace ksg {
                const int k, int *mx_counts, int *my_counts) {
         KsgCountsStrategy{}(Mx, My, n_points, k, mx_counts, my_counts);
     }
-
-
-#ifdef CUDA_SUPPORT
-    struct cuda_ksg_counts {
-        void operator()(std::span<const double> Mx, std::span<const double> My,
-                        int n_points, int k, int *mx_counts,
-                        int *my_counts) const;
-    };
-#endif
 } // namespace ksg
 
 

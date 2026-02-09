@@ -1,4 +1,7 @@
 #include "mutual_information.hpp"
+#ifdef CUDA_SUPPORT
+#include "mutual_information.cuh"
+#endif
 
 extern "C" {
 void c_cpp_ksg_counts(const double *Mx, const double *My, const int n_points,

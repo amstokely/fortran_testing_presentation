@@ -1,4 +1,4 @@
-#include "mutual_information.hpp"
+#include "mutual_information.cuh"
 
 
 template<typename T> struct CudaArray {
