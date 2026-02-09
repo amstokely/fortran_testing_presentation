@@ -46,8 +46,8 @@ namespace ksg {
     max_neighbor_distance(const std::span<const double> X, const double xref,
                           std::span<const std::size_t> idxs) {
         double max_dist = 0.0;
-        for (const auto i: idxs) max_dist = std::max(
-                                     max_dist, std::abs(X[i] - xref));
+        for (const auto i: idxs)
+            max_dist = std::max(max_dist, std::abs(X[i] - xref));
         return max_dist;
     }
 
@@ -103,9 +103,13 @@ namespace ksg {
                         const std::span<const double> My, const int n_points,
                         const int k, int *mx_counts, int *my_counts) const {
             for (int i = 0; i < n_points; ++i) {
-                std::tie(mx_counts[i], my_counts[i]) = cpp_ksg_count(
-                    Mx.subspan(0, n_points), My.subspan(0, n_points),
-                    static_cast<std::size_t>(i), static_cast<std::size_t>(k));
+                auto [mx, my] = cpp_ksg_count(Mx.subspan(0, n_points),
+                                              My.subspan(0, n_points),
+                                              static_cast<std::size_t>(i),
+                                              static_cast<std::size_t>(k));
+
+                mx_counts[i] = static_cast<int>(mx);
+                my_counts[i] = static_cast<int>(my);
             }
         }
     };
