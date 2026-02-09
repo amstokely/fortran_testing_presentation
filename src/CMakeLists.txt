@@ -34,7 +34,11 @@ else ()
             cpp_mutual_information.f90
     )
 endif ()
-target_link_libraries(mutual_information PRIVATE mutual_information_cpp)
+if (ENABLE_CUDA)
+    target_link_libraries(mutual_information_cpp PUBLIC mutual_information_cpp mutual_information_cuda)
+else ()
+    target_link_libraries(mutual_information_cpp PUBLIC mutual_information_cpp)
+endif ()
 target_include_directories(mutual_information INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         $<INSTALL_INTERFACE:include>
