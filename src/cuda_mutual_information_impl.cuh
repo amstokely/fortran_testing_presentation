@@ -7,7 +7,7 @@
 #include <utility>
 #include <cmath>
 
-#include "mutual_information.cuh"
+#include "cuda_mutual_information.cuh"
 
 template<typename T>
 struct CudaArray {

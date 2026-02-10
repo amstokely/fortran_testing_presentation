@@ -1,5 +1,5 @@
 #include "mutual_information.hpp"
-#include "mutual_information.cuh"
+#include "cuda_mutual_information.cuh"
 #include "config.hpp"
 #include <stdexcept>
 

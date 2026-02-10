@@ -11,7 +11,7 @@ add_library(mutual_information_cpp SHARED
 
 if (ENABLE_CUDA)
     target_sources(mutual_information_cpp PRIVATE
-            mutual_information.cu
+            cuda_mutual_information.cu
     )
 
     set_target_properties(mutual_information_cpp PROPERTIES
@@ -46,7 +46,7 @@ else()
     add_library(mutual_information SHARED
             mutual_information.f90
             cpp_mutual_information.f90
-            mutual_information_cuda_impl.cuh
+            cuda_mutual_information_impl.cuh
     )
 endif()
 
