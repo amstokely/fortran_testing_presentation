@@ -123,7 +123,7 @@ contains
    @test
    subroutine test_analytic_gaussian_ratio(this)
       class(mi_case), intent(inout) :: this
-      real(real64) :: mi_02, mi_04, mi_06, gc, pearson_r
+      real(real64) :: mi_02, mi_04, mi_06
       integer :: k_02, k_04, k_06
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, 0.9_real64)

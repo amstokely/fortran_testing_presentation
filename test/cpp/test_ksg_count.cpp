@@ -78,13 +78,13 @@ int main() {
             };
             if constexpr(config::cuda_enabled) {
                 when("running the complete ksg_count cuda algorithm") = [&] {
-                    auto mx_counts = std::make_unique<int[]>(8);
-                    auto my_counts = std::make_unique<int[]>(8);
-                    auto mx_view = std::span<int>{mx_counts.get(), 8};
-                    auto my_view = std::span<int>{my_counts.get(), 8};
+                    const auto mx_counts = std::make_unique<int[]>(8);
+                    const auto my_counts = std::make_unique<int[]>(8);
+                    const auto mx_view = std::span<int>{mx_counts.get(), 8};
+                    const auto my_view = std::span<int>{my_counts.get(), 8};
                     ksg::ksg_counts<ksg::cuda_ksg_counts>(
                         Mx, My, static_cast<int>(Mx.size()),
-                        /*k*/ 3, mx_view, my_view);
+                        3, mx_view, my_view);
 
                     then("the first values in mx_counts and my_counts match the Fortran implementation") = [
                         &] {
