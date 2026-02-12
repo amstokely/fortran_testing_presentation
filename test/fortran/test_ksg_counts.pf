@@ -6,6 +6,7 @@ module test_ksg_counts
 #ifdef CUDA_SUPPORT
    use cuda_mutual_information
 #endif
+   use ksg_error, only: error_t
    use test_utils
 
    implicit none
@@ -98,13 +99,27 @@ contains
       class(ksg_counts_case), intent(inout) :: this
 
       integer :: mx_counts(8), my_counts(8)
+      type(error_t) :: err
 
       call this%param%ksg_counts_strategy( &
-            this%Mx, this%My, 3, mx_counts, my_counts )
+            this%Mx, this%My, 3, mx_counts, my_counts, err)
 
       call assertEqual( &
-            [3, 6], [mx_counts(1), my_counts(1)], &
-            message="ksg_counts: wrong nx, ny for first sample with k=3 for "//this%param%name )
+            [3, 6], [mx_counts(1), my_counts(1)])
+   end subroutine
+
+   @Test
+   subroutine test_ksg_counts_different_size_vars_fails(this)
+      class(ksg_counts_case), intent(inout) :: this
+
+      real(real64) :: Mx(10), My(20)
+      integer :: mx_counts(10), my_counts(20)
+      type(error_t) :: err
+
+      call this%param%ksg_counts_strategy( &
+            Mx, My, 3, mx_counts, my_counts, err)
+
+      call assertNotEqual(0, err%code)
    end subroutine
 
 end module test_ksg_counts

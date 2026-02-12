@@ -51,8 +51,7 @@ contains
 
       call assertEqual( &
             expected_dists, dists, &
-            tolerance=1.0e-12_real64, &
-            message="max_norm_from_point: incorrect Chebyshev distances from (Mx(1),My(1)) to all points" )
+            tolerance=1.0e-12_real64)
    end subroutine
 
    ! --------------------------------------------------------------------------
@@ -71,8 +70,7 @@ contains
       call k_argsort(X, 4, idxs)
 
       call assertEqual( &
-            expected_idxs, idxs, &
-            message="k_argsort: failed to return indices of 4 smallest distances in correct order" )
+            expected_idxs, idxs)
    end subroutine
 
    ! --------------------------------------------------------------------------
@@ -88,8 +86,7 @@ contains
 
       call assertEqual( &
             3.0_real64, max_dist, &
-            tolerance=1.0e-12_real64, &
-            message="max_neighbor_distance: wrong maximum |My - y0| over provided neighbor indices" )
+            tolerance=1.0e-12_real64)
    end subroutine
 
    ! --------------------------------------------------------------------------
@@ -102,8 +99,7 @@ contains
       call count_neighbors_within_radius(this%My, 5.0_real64, 3.0_real64, count)
 
       call assertEqual( &
-            6, count, &
-            message="count_neighbors_within_radius: incorrect number of My points within Chebyshev radius r=3 of y0=5" )
+            6, count)
    end subroutine
 
    ! --------------------------------------------------------------------------
@@ -117,8 +113,7 @@ contains
       call f90_ksg_count(this%Mx, this%My, 1, 3, f90_mx_counts, f90_my_counts)
 
       call assertEqual( &
-            [3, 6], [f90_mx_counts, f90_my_counts], &
-            message="f90_ksg_count: incorrect nx, ny counts for point 1 with k=3 (Chebyshev norm KSG rule)" )
+            [3, 6], [f90_mx_counts, f90_my_counts])
    end subroutine
 
 end module test_f90_ksg_count

@@ -1,0 +1,30 @@
+module test_f90_mutual_information
+   use iso_fortran_env, only : real64
+   use funit
+   use mutual_information
+   use ksg_error, only : error_t
+   use test_utils
+   implicit none
+
+contains
+
+   @Test
+   subroutine test_mutual_information_handles_cpp_exceptions()
+      implicit none
+      real(real64) :: Mx(10)
+      real(real64) :: My(10)
+      integer :: mx_counts(10)
+      integer :: my_counts(10)
+      real(real64) :: mi
+      integer :: k = 3
+      type(error_t) :: err
+
+      call calc_mutual_information(&
+            Mx, My, k, mi, err, cpp_throws_ksg_counts)
+      call assertNotEqual(expected=0, actual=err%code)
+
+
+
+   end subroutine
+
+end module test_f90_mutual_information

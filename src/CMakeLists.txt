@@ -5,10 +5,22 @@ configure_file(
         @ONLY
 )
 
+add_library(ksg_error_f90 SHARED ksg_error.f90)
+target_include_directories(ksg_error_f90 INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+add_library(math_utils_f90 SHARED math_utils.f90)
+target_include_directories(math_utils_f90 INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(math_utils_f90 PRIVATE ksg_error_f90)
+
 add_library(mutual_information_cpp SHARED
         mutual_information.cpp
 )
-
 if (ENABLE_CUDA)
     target_sources(mutual_information_cpp PRIVATE
             cuda_mutual_information.cu
@@ -18,14 +30,12 @@ if (ENABLE_CUDA)
             CUDA_SEPARABLE_COMPILATION ON
     )
 endif()
-
 set_target_properties(mutual_information_cpp PROPERTIES
         LINKER_LANGUAGE CXX
 )
 target_include_directories(mutual_information_cpp PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
 )
-
 target_include_directories(mutual_information_cpp INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
@@ -51,7 +61,7 @@ else()
 endif()
 
 target_link_libraries(mutual_information PUBLIC
-        mutual_information_cpp
+        ksg_error_f90 mutual_information_cpp math_utils_f90
 )
 
 target_include_directories(mutual_information INTERFACE

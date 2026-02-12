@@ -1,4 +1,4 @@
-module test_mutual_information
+module test_mutual_information_common
    use iso_fortran_env, only : real64
    use funit
    use mutual_information
@@ -25,8 +25,8 @@ module test_mutual_information
    ! Parameterized test case
    ! ---------------------------------------------------------------------------
 
-   @testCase(constructor = make_case, testParameters = {getKsgCountsStrategyParams()})
-   type, extends(ParameterizedTestCase) :: mi_case
+   @testCase(constructor = make_mutual_information_fixture, testParameters = {getKsgCountsStrategyParams()})
+   type, extends(ParameterizedTestCase) :: mutual_information_fixture
       type(KsgCountsStrategyParam) :: param
       integer :: n_points = 1024
       real(real64), allocatable :: Mx(:), My(:)
@@ -35,19 +35,19 @@ module test_mutual_information
       procedure :: teardown
       procedure :: test_mutual_information_independent
       procedure :: test_analytic_gaussian_ratio
-   end type mi_case
+   end type mutual_information_fixture
 
-   interface mi_case
-      module procedure make_case
+   interface mutual_information_fixture
+      module procedure make_mutual_information_fixture
    end interface
 
 contains
 
-   function make_case(param) result(this)
+   function make_mutual_information_fixture(param) result(this)
       class(KsgCountsStrategyParam), intent(in) :: param
-      type(mi_case) :: this
+      type(mutual_information_fixture) :: this
       this%param = param
-   end function make_case
+   end function make_mutual_information_fixture
 
    function getKsgCountsStrategyParams() result(params)
       type(KsgCountsStrategyParam), allocatable :: params(:)
@@ -71,13 +71,13 @@ contains
    end function getKsgCountsStrategyParams
 
    subroutine setup(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       allocate(this%Mx(this%n_points))
       allocate(this%My(this%n_points))
    end subroutine
 
    subroutine teardown(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       deallocate(this%Mx)
       deallocate(this%My)
    end subroutine
@@ -88,13 +88,14 @@ contains
 
    @test
    subroutine test_mutual_information_independent(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       real(real64) :: mi
+      type(error_t) :: err
 
       call generate_independent_arrays(this%Mx, this%My, this%n_points)
 
       call calc_mutual_information(&
-            this%Mx, this%My, this%n_points / 2, mi, this%param%ksg_counts_strategy)
+            this%Mx, this%My, this%n_points / 2, mi, err, this%param%ksg_counts_strategy)
 
       @assertEqual(0.0_real64, mi, tolerance = 0.01_real64)
    end subroutine
@@ -103,28 +104,61 @@ contains
 
    @test
    subroutine test_mutual_information_analytic_gaussian(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       integer, parameter :: n_big = 4096
       integer :: k
       real(real64) :: Mx(n_big), My(n_big)
       real(real64) :: mi
+      type(error_t) err
 
       call correlated_gaussian_arrays(Mx, My, n_big, 0.9_real64)
 
       k = int(n_big * 0.04_real64 + 0.5_real64)
 
-      call calc_mutual_information(Mx, My, k, mi, this%param%ksg_counts_strategy)
+      call calc_mutual_information(Mx, My, k, mi, err, this%param%ksg_counts_strategy)
 
       @assertEqual(0.830366_real64, mi, tolerance = 0.05_real64)
+   end subroutine
+
+   @test
+   subroutine test_mutual_information_different_size_vars_fails(this)
+      class(mutual_information_fixture), intent(inout) :: this
+      integer :: k
+      real(real64) :: Mx(10), My(20)
+      real(real64) :: mi
+      type(error_t) err
+
+      k = 3
+      call calc_mutual_information(Mx, My, k, mi, err, this%param%ksg_counts_strategy)
+
+      @assertNotEqual(0, err%code)
+   end subroutine
+
+   @test
+   subroutine test_mutual_information_k_less_than_one_fails(this)
+      class(mutual_information_fixture), intent(inout) :: this
+      integer :: k
+      real(real64) :: Mx(10), My(10)
+      real(real64) :: mi
+      type(error_t) err
+
+      k = 0
+      call calc_mutual_information(Mx, My, k, mi, err, this%param%ksg_counts_strategy)
+      @assertNotEqual(0, err%code)
+
+      k = -1
+      call calc_mutual_information(Mx, My, k, mi, err, this%param%ksg_counts_strategy)
+      @assertNotEqual(0, err%code)
    end subroutine
 
    ! ---------------------------------------------------------------------------
 
    @test
    subroutine test_analytic_gaussian_ratio(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       real(real64) :: mi_02, mi_04, mi_06
       integer :: k_02, k_04, k_06
+      type(error_t) :: err
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, 0.9_real64)
 
@@ -132,9 +166,9 @@ contains
       k_04 = int(this%n_points * 0.04_real64 + 0.5_real64)
       k_06 = int(this%n_points * 0.06_real64 + 0.5_real64)
 
-      call calc_mutual_information(this%Mx, this%My, k_02, mi_02, this%param%ksg_counts_strategy)
-      call calc_mutual_information(this%Mx, this%My, k_04, mi_04, this%param%ksg_counts_strategy)
-      call calc_mutual_information(this%Mx, this%My, k_06, mi_06, this%param%ksg_counts_strategy)
+      call calc_mutual_information(this%Mx, this%My, k_02, mi_02, err, this%param%ksg_counts_strategy)
+      call calc_mutual_information(this%Mx, this%My, k_04, mi_04, err, this%param%ksg_counts_strategy)
+      call calc_mutual_information(this%Mx, this%My, k_06, mi_06, err, this%param%ksg_counts_strategy)
 
       @assertTrue(mi_02 > mi_04)
       @assertTrue(mi_04 > mi_06)
@@ -144,13 +178,14 @@ contains
 
    @test
    subroutine test_generalized_correlation_independent(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       real(real64) :: gc
+      type(error_t) :: err
 
       call generate_independent_arrays(this%Mx, this%My, this%n_points)
 
       call calc_generalized_correlation(&
-            this%Mx, this%My, this%n_points / 2, gc, this%param%ksg_counts_strategy)
+            this%Mx, this%My, this%n_points / 2, gc, err, this%param%ksg_counts_strategy)
 
       @assertEqual(0.0_real64, gc, tolerance = 0.15_real64)
    end subroutine
@@ -159,13 +194,14 @@ contains
    !
    @test
    subroutine test_generalized_correlation_non_negative(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       real(real64) :: gc, pearson_r
+      type(error_t) :: err
 
       call correlated_gaussian_arrays(this%Mx, this%My, this%n_points, -1.0_real64)
 
       call calc_generalized_correlation(&
-            this%Mx, this%My, 4, gc, this%param%ksg_counts_strategy)
+            this%Mx, this%My, 4, gc, err, this%param%ksg_counts_strategy)
 
       pearson_r = pearson_corr(this%Mx, this%My, this%n_points)
 
@@ -176,13 +212,14 @@ contains
 
    @test
    subroutine test_generalized_correlation_non_linear(this)
-      class(mi_case), intent(inout) :: this
+      class(mutual_information_fixture), intent(inout) :: this
       real(real64) :: gc
+      type(error_t) :: err
 
       call sin_cos_arrays(this%Mx, this%My, this%n_points)
 
       call calc_generalized_correlation(&
-            this%Mx, this%My, 4, gc, this%param%ksg_counts_strategy)
+            this%Mx, this%My, 4, gc, err, this%param%ksg_counts_strategy)
 
       @assertEqual(1.0_real64, gc, tolerance = 0.1_real64)
    end subroutine
@@ -195,4 +232,4 @@ contains
       s = this%name
    end function
 
-end module test_mutual_information
+end module test_mutual_information_common

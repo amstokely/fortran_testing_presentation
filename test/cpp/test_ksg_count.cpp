@@ -5,10 +5,11 @@
 
 #include "mutual_information.hpp"
 #include "cuda_mutual_information.cuh"
-#include "config.hpp"
+#include "/Users/astokely/CLionProjects/fortran_testing_presentation/test/utils/test_utils.hpp"
 
 using namespace boost::ut;
 using namespace boost::ut::bdd;
+
 
 int main() {
     "KSG helper algorithms"_test = [] {
@@ -60,6 +61,22 @@ int main() {
                     expect(count == 6u);
                 };
             };
+
+            when("the backend strategy throws an exception") = [&] {
+                auto mx_counts = std::make_unique<int[]>(8);
+                auto my_counts = std::make_unique<int[]>(8);
+                auto mx_view = std::span<int>{mx_counts.get(), 8};
+                auto my_view = std::span<int>{my_counts.get(), 8};
+
+                then("ksg_counts propagates the exception") = [&] {
+                    expect(throws<std::runtime_error>([&] {
+                        ksg::ksg_counts<test_utils::ThrowingKsgCounts>(
+                            Mx, My, static_cast<int>(Mx.size()),
+                            3, mx_view, my_view);
+                    }));
+                };
+            };
+
 
             when("running the complete ksg_count algorithm") = [&] {
                 auto mx_counts = std::make_unique<int[]>(8);
