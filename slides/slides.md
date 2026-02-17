@@ -4,6 +4,27 @@ theme: gaia
 paginate: true
 ---
 
+MI(Mx, My) = $\psi(N) + \psi(k) - \frac{1}{k} - \langle \psi(n_x) + \psi(n_y) \rangle$
+
+---
+
+```bash
+set(PFUNIT_DIR CACHE PATH "Path to PFUNIT installation")
+find_package(PFUNIT REQUIRED)
+```
+
+---
+
+```bash
+add_pfunit_ctest(
+        test_f90_ksg_count
+        TEST_SOURCES test_f90_ksg_count.pf
+        LINK_LIBRARIES test_utils mutual_information
+)
+```
+
+---
+
 ```fortran
  @TestCase
    type, extends(TestCase) :: ksg_count_fixture
@@ -55,6 +76,76 @@ contains
 ---
 
 ```fortran
+  ! --------------------------------------------------------------------------
+   subroutine max_norm_from_point(Mx, My, xref_x, xref_y, dists)
+      real(real64), intent(in) :: Mx(:), My(:)
+      real(real64), intent(in) :: xref_x, xref_y
+      real(real64), intent(out) :: dists(size(Mx))
+
+      integer :: i
+   end subroutine max_norm_from_point
+```
+
+---
+
+```bash
+Failure
+ in: 
+test_f90_ksg_count_suite.test_max_norm_from_point
+  Location: 
+[<unknown location>]
+ArrayAssertEqual failure:
+      Expected: <3.0000000000000000>
+        Actual: <0.98813129168249309E-323>
+    Difference: <-3.0000000000000000> (greater than tolerance of 0.99999999999999998E-12)
+      at index: [2]
+  
+ FAILURES!!!
+Tests run: 1, Failures: 1, Errors: 0
+```
+
+---
+
+```fortran
+   subroutine max_norm_from_point(Mx, My, xref_x, xref_y, dists)
+      real(real64), intent(in) :: Mx(:), My(:)
+      real(real64), intent(in) :: xref_x, xref_y
+      real(real64), intent(out) :: dists(size(Mx))
+
+      integer :: i
+      do i = 1, size(Mx)
+         dists(i) = max(abs(Mx(i) - xref_x), &
+               abs(My(i) - xref_y))
+      end do
+   end subroutine max_norm_from_point
+```
+
+---
+
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
+```
+
+---
+
+```fortran
+subroutine k_argsort(X, k, idxs)
+   real(real64), intent(in)  :: X(:)
+   integer,      intent(in)  :: k
+   integer,      intent(out) :: idxs(k)
+
+end subroutine k_argsort
+```
+
+---
+
+```fortran
   @Test
    subroutine test_k_argsort(this)
       class(ksg_count_fixture), intent(inout) :: this
@@ -71,6 +162,24 @@ contains
       call assertEqual( &
             expected_idxs, idxs)
    end subroutine
+```
+
+---
+
+```fortran
+Failure
+ in: 
+test_f90_ksg_count_suite.test_k_argsort
+  Location: 
+[<unknown location>]
+ArrayAssertEqual failure:
+      Expected: <1>
+        Actual: <0>
+    Difference: <-1>
+      at index: [1]
+  
+ FAILURES!!!
+Tests run: 2, Failures: 1, Errors: 0
 ```
 
 ---
@@ -99,6 +208,18 @@ subroutine k_argsort(X, k, idxs)
       idxs(i) = min_idx
    end do
 end subroutine k_argsort
+```
+
+---
+
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
 ```
 
 ---
@@ -139,6 +260,18 @@ end subroutine k_argsort
 
 ---
 
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
+```
+
+---
+
 ```fortran
   @Test
    subroutine test_max_neighbor_distance(this)
@@ -175,6 +308,18 @@ end subroutine k_argsort
 
 ---
 
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
+```
+
+---
+
 
 ```fortran
   @Test
@@ -187,6 +332,18 @@ end subroutine k_argsort
       call assertEqual( &
             6, count)
    end subroutine
+```
+
+---
+
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
 ```
 
 ---
@@ -207,6 +364,18 @@ end subroutine k_argsort
 
       count = count - 1
    end subroutine count_neighbors_within_radius
+```
+
+---
+
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
 ```
 
 ---
@@ -259,6 +428,18 @@ end subroutine k_argsort
 
 ---
 
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
+```
+
+---
+
 ```fortran
   @Test
    subroutine test_ksg_counts_complete(this)
@@ -295,6 +476,18 @@ end subroutine k_argsort
 
 ---
 
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+1/1 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
+```
+
+---
+
 ```fortran
  @testCase
    type, extends(TestCase) :: mutual_information_fixture
@@ -323,6 +516,16 @@ contains
 ---
 
 ```fortran
+   subroutine calc_mutual_information(Mx, My, k, mi)
+      real(real64), intent(in) :: Mx(:), My(:)
+      integer, intent(in) :: k
+      real(real64), intent(out) :: mi
+   end subroutine calc_mutual_information
+```
+
+---
+
+```fortran
    @test
    subroutine test_mutual_information_independent(this)
       class(mutual_information_fixture), intent(inout) :: this
@@ -333,7 +536,7 @@ contains
       call calc_mutual_information(&
             this%Mx, this%My, this%n_points / 2, mi)
 
-      @assertEqual(0.0_real64, mi, tolerance = 0.01_real64)
+      call assertEqual(0.0_real64, mi, tolerance = 0.01_real64)
    end subroutine
 ```
 
@@ -354,7 +557,7 @@ contains
 
       call calc_mutual_information(Mx, My, k, mi)
 
-      @assertEqual(0.830366_real64, mi, tolerance = 0.05_real64)
+      call assertEqual(0.830366_real64, mi, tolerance = 0.05_real64)
    end subroutine
 ```
 
@@ -377,9 +580,33 @@ contains
       call calc_mutual_information(this%Mx, this%My, k_04, mi_04)
       call calc_mutual_information(this%Mx, this%My, k_06, mi_06)
 
-      @assertTrue(mi_02 > mi_04)
-      @assertTrue(mi_04 > mi_06)
+      call assertTrue(mi_02 > mi_04)
+      call assertTrue(mi_04 > mi_06)
    end subroutine
+```
+
+---
+
+```shell
+Failure
+ in: 
+test_mutual_information_suite.test_mutual_information_analytic_gaussian
+  Location: 
+[test_mutual_information.pf:120]
+AssertEqual failure:
+      Expected: <0.83036600000000005>
+        Actual: <0.0000000000000000>
+    Difference: <-0.83036600000000005> (greater than tolerance of 0.50000000000000003E-1)
+  
+Failure
+ in: 
+test_mutual_information_suite.test_analytic_gaussian_ratio
+  Location: 
+[test_mutual_information.pf:174]
+  
+ FAILURES!!!
+Tests run: 4, Failures: 12, Errors: 0
+, Disabled: 0
 ```
 
 ---
@@ -422,6 +649,23 @@ contains
 
 ---
 
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+    Start 1: test_mutual_information
+1/3 Test #1: test_mutual_information ...   Passed    1.78 sec
+    Start 2: test_ksg_counts
+2/2 Test #2: test_ksg_counts ..................   Passed    0.01 sec
+    Start 3: test_f90_ksg_count
+3/3 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   1.81 sec
+```
+
+---
+
 ```fortran
   @test
    subroutine test_generalized_correlation_independent(this)
@@ -433,9 +677,12 @@ contains
       call calc_generalized_correlation(&
             this%Mx, this%My, this%n_points / 2, gc)
 
-      @assertEqual(0.0_real64, gc, tolerance = 0.15_real64)
+      call assertEqual(0.0_real64, gc, tolerance = 0.15_real64)
    end subroutine
-      
+ ```
+---
+
+```fortran
    @test
    subroutine test_generalized_correlation_non_negative(this)
       class(mutual_information_fixture), intent(inout) :: this
@@ -448,11 +695,13 @@ contains
 
       pearson_r = pearson_corr(this%Mx, this%My, this%n_points)
 
-      @assertEqual(0.0_real64, gc + pearson_r, tolerance = 0.1_real64)
+      call assertEqual(0.0_real64, gc + pearson_r, tolerance = 0.1_real64)
    end subroutine
+```
 
-   ! ---------------------------------------------------------------------------
+---
 
+```fortran
    @test
    subroutine test_generalized_correlation_non_linear(this)
       class(mutual_information_fixture), intent(inout) :: this
@@ -463,7 +712,226 @@ contains
       call calc_generalized_correlation(&
             this%Mx, this%My, 4, gc)
 
-      @assertEqual(1.0_real64, gc, tolerance = 0.1_real64)
+      call assertEqual(1.0_real64, gc, tolerance = 0.1_real64)
+   end subroutine
+```
+
+---
+
+```shell
+Failure
+ in: 
+test_mutual_information_suite.test_generalized_correlation_non_negative
+  Location: 
+[test_mutual_information.pf:208]
+AssertEqual failure:
+      Expected: <0.0000000000000000>
+        Actual: <-1.0000000000000000>
+    Difference: <-1.0000000000000000> (greater than tolerance of 0.10000000000000001)
+  
+Failure
+ in: 
+test_mutual_information_suite.test_generalized_correlation_non_linear
+  Location: 
+[test_mutual_information.pf:224]
+AssertEqual failure:
+      Expected: <1.0000000000000000>
+        Actual: <0.12731980816870290E-312>
+    Difference: <-1.0000000000000000> (greater than tolerance of 0.10000000000000001)
+  
+ FAILURES!!!
+Tests run: 6, Failures: 4, Errors: 0
+```
+
+---
+
+```fortran
+subroutine calc_generalized_correlation(Mx, My, k, gc)
+   real(real64), intent(in) :: Mx(:), My(:)
+   integer, intent(in) :: k
+   real(real64), intent(out) :: gc
+
+   real(real64) :: mi
+
+   call calc_mutual_information(Mx, My, k, mi)
+
+   if (mi <= 0.0_real64) then
+      gc = 0.0_real64
+   else
+      gc = sqrt(1.0_real64 - exp(-2.0_real64 * mi))
+   end if
+end subroutine calc_generalized_correlation
+```
+
+---
+
+```bash
+astokely@mmm-swing build % ctest
+Test project /Users/astokely/CLionProjects/fortran_testing_presentation/build
+    Start 1: test_mutual_information
+1/3 Test #1: test_mutual_information ...   Passed    1.78 sec
+    Start 2: test_ksg_counts
+2/2 Test #2: test_ksg_counts ..................   Passed    0.01 sec
+    Start 3: test_f90_ksg_count
+3/3 Test #3: test_f90_ksg_count ...............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   1.81 sec
+```
+
+---
+
+```fortran
+subroutine calc_mutual_information(Mx, My, k, mi, ksg_counts_strategy)
+   real(real64), intent(in) :: Mx(:), My(:)
+   integer, intent(in) :: k
+   real(real64), intent(out) :: mi
+   procedure(ksg_counts_i), optional :: ksg_counts_strategy
+
+   integer :: n_points, i
+   integer :: mx_counts(size(Mx)), my_counts(size(My))
+   real(real64), allocatable :: psi(:)
+   real(real64), parameter :: gamma = -0.5772156649015328606_real64
+   real(real64) :: avg_psi_ksg_sum
+   procedure(ksg_counts_i), pointer :: ksg_counts
+
+   n_points = size(Mx)
+   allocate(psi(n_points + 1))
+   
+   if (present(ksg_counts_strategy)) then
+      ksg_counts => ksg_counts_strategy
+   else
+      ksg_counts => f90_ksg_counts
+   end if
+
+   psi = 0.0_real64
+   psi(2) = gamma
+   do i = 2, n_points + 1
+      psi(i) = psi(i - 1) + 1.0_real64 / real(i - 1, real64)
+   end do
+
+   avg_psi_ksg_sum = 0.0_real64
+   call ksg_counts(Mx, My, k, mx_counts, my_counts)
+   do i = 1, n_points
+      avg_psi_ksg_sum = avg_psi_ksg_sum + &
+            (psi(mx_counts(i) + 1) + psi(my_counts(i) + 1))
+   end do
+
+   avg_psi_ksg_sum = avg_psi_ksg_sum / real(n_points, real64)
+
+   mi = psi(k + 1) + psi(n_points + 1) - avg_psi_ksg_sum - 1.0_real64 / real(k, real64)
+
+   deallocate(psi)
+end subroutine calc_mutual_information
+```
+
+---
+
+```fortran
+  ! ---------------------------------------------------------------------------
+   ! KsgCountsStrategy test parameter
+   ! ---------------------------------------------------------------------------
+
+   @testParameter
+   type, extends(AbstractTestParameter) :: KsgCountsStrategyParam
+      character(len = :), allocatable :: name
+      procedure(ksg_counts_i), pointer, nopass :: ksg_counts_strategy
+   contains
+      procedure :: toString
+   end type KsgCountsStrategyParam
+```
+
+---
+
+```fortran
+   @testCase(constructor = make_mutual_information_fixture, testParameters = {getKsgCountsStrategyParams()})
+   type, extends(ParameterizedTestCase) :: mutual_information_fixture
+      type(KsgCountsStrategyParam) :: param
+      integer :: n_points = 1024
+      real(real64), allocatable :: Mx(:), My(:)
+   contains
+      procedure :: setup
+      procedure :: teardown
+   end type mutual_information_fixture
+
+   interface mutual_information_fixture
+      module procedure make_mutual_information_fixture
+   end interface
+   
+
+contains ! To be continued in the next slide
+```
+
+---
+
+```fortran
+
+   function make_mutual_information_fixture(param) result(this)
+      class(KsgCountsStrategyParam), intent(in) :: param
+      type(mutual_information_fixture) :: this
+      this%param = param
+   end function make_mutual_information_fixture
+
+   function getKsgCountsStrategyParams() result(params)
+      type(KsgCountsStrategyParam), allocatable :: params(:)
+
+#ifdef CUDA_SUPPORT
+      allocate(params(3))
+#else
+      allocate(params(2))
+#endif
+
+      params(1)%name = "Fortran"
+      params(1)%ksg_counts_strategy => f90_ksg_counts
+
+      params(2)%name = "C++"
+      params(2)%ksg_counts_strategy => cpp_ksg_counts
+
+#ifdef CUDA_SUPPORT
+      params(3)%name    = "CUDA"
+      params(3)%ksg_counts_strategy => cuda_ksg_counts
+#endif
+   end function getKsgCountsStrategyParams
+
+   subroutine setup(this)
+      class(mutual_information_fixture), intent(inout) :: this
+      allocate(this%Mx(this%n_points))
+      allocate(this%My(this%n_points))
    end subroutine
 
+   subroutine teardown(this)
+      class(mutual_information_fixture), intent(inout) :: this
+      deallocate(this%Mx)
+      deallocate(this%My)
+   end subroutine
+```
+
+---
+
+```fortran
+  @test
+   subroutine test_mutual_information_independent(this)
+      class(mutual_information_fixture), intent(inout) :: this
+      real(real64) :: mi
+      type(error_t) :: err
+
+      call generate_independent_arrays(this%Mx, this%My, this%n_points)
+
+      call calc_mutual_information(&
+            this%Mx, this%My, this%n_points / 2, mi, err, this%param%ksg_counts_strategy)
+
+      @assertEqual(0.0_real64, mi, tolerance = 0.01_real64)
+   end subroutine
+```
+
+---
+
+```fortran
+1:  Start: <test_mutual_information_common_suite.test_mutual_information_independent[Fortran][Fortran]>
+1: .   end: <test_mutual_information_common_suite.test_mutual_information_independent[Fortran][Fortran]>
+1:  
+1: 
+1:  Start: <test_mutual_information_common_suite.test_mutual_information_independent[C++][C++]>
+1: .   end: <test_mutual_information_common_suite.test_mutual_information_independent[C++][C++]>
 ```
